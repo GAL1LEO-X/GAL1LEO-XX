@@ -1,5 +1,5 @@
-# Applicazioni
+# Apps
 
-Inserire ogni progetto pubblico in `apps/<nome-progetto>/`.
+Place each public project in `apps/<project-name>/`.
 
-Prima di pubblicarne il codice, includere istruzioni e test e scegliere la licenza del progetto.
+Before publishing its code, include instructions and tests and select a license for the project.
