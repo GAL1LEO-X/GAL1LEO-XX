@@ -1,18 +1,18 @@
 # GAL1LEO-XX
 
-Raccolta di progetti pubblici organizzati per categoria.
+Public projects organized by category.
 
-## Struttura
+## Structure
 
 ```text
-plugins/<nome-progetto>/
-apps/<nome-progetto>/
-tools/<nome-progetto>/
+plugins/<project-name>/
+apps/<project-name>/
+tools/<project-name>/
 docs/
 ```
 
-## Pubblicazione
+## Publishing
 
-Ogni progetto deve includere istruzioni e test. La licenza va scelta per ciascun progetto prima di pubblicarne il codice.
+Each project must include instructions and tests. Select a license for each project before publishing its code.
 
-Usare cartelle normali, senza repository `.git` annidati né submodule.
+Use regular directories, without nested `.git` repositories or submodules.
