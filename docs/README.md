@@ -1,5 +1,6 @@
-# Documentation
+# Documentazione
 
-Shared documentation for public projects belongs here.
+Questa cartella raccoglie la documentazione condivisa dei progetti pubblici.
 
-Each project must include instructions and tests, and its license must be selected before publishing its code.
+Ogni progetto deve includere istruzioni e test. Prima di pubblicarne il
+codice, scegliere una licenza per il progetto.

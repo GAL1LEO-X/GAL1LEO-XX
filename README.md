@@ -1,8 +1,8 @@
 # GAL1LEO-XX
 
-Public projects organized by category.
+Raccolta di progetti pubblici organizzati per categoria.
 
-## Structure
+## Struttura
 
 ```text
 plugins/<project-name>/
@@ -11,8 +11,14 @@ tools/<project-name>/
 docs/
 ```
 
-## Publishing
+- [Plugin](plugins/README.md)
+- [Applicazioni](apps/README.md)
+- [Strumenti](tools/README.md)
+- [Documentazione condivisa](docs/README.md)
 
-Each project must include instructions and tests. Select a license for each project before publishing its code.
+## Pubblicazione
 
-Use regular directories, without nested `.git` repositories or submodules.
+Ogni progetto deve includere istruzioni e test. Prima di pubblicarne il
+codice, scegliere una licenza per il progetto.
+
+Usare cartelle ordinarie, senza repository `.git` annidati o sottomoduli.
