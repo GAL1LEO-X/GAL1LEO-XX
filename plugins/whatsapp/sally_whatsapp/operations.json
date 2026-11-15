@@ -1,0 +1,6680 @@
+{
+  "profile_get_my_profile": {
+    "family": "profile",
+    "method": "GET",
+    "path": "/api/{session}/profile",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get my profile",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "profile_set_profile_name": {
+    "family": "profile",
+    "method": "PUT",
+    "path": "/api/{session}/profile/name",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Set my profile name",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "profile_set_profile_status": {
+    "family": "profile",
+    "method": "PUT",
+    "path": "/api/{session}/profile/status",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Set profile status (About)",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "status": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "status"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "profile_set_profile_picture": {
+    "family": "profile",
+    "method": "PUT",
+    "path": "/api/{session}/profile/picture",
+    "readonly": false,
+    "sending": false,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Set profile picture",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "profile_delete_profile_picture": {
+    "family": "profile",
+    "method": "DELETE",
+    "path": "/api/{session}/profile/picture",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Delete profile picture",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "messages_send_text": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendText",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Send a text message",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string",
+              "description": "Pre-generated message id"
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            },
+            "text": {
+              "type": "string"
+            },
+            "linkPreview": {
+              "type": "boolean",
+              "const": false,
+              "description": "Automatic link previews are disabled; omit or set false."
+            },
+            "linkPreviewHighQuality": {
+              "type": "boolean",
+              "const": false,
+              "description": "Automatic link previews are disabled; omit or set false."
+            }
+          },
+          "required": [
+            "chatId",
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_image": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendImage",
+    "readonly": false,
+    "sending": true,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Send an image",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            },
+            "caption": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_file": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendFile",
+    "readonly": false,
+    "sending": true,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Send a file",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            },
+            "caption": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_voice": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendVoice",
+    "readonly": false,
+    "sending": true,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Send an voice message",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            },
+            "convert": {
+              "type": "boolean",
+              "description": "Convert the input file to the required format using ffmpeg before sending"
+            }
+          },
+          "required": [
+            "chatId",
+            "convert"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_video": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendVideo",
+    "readonly": false,
+    "sending": true,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Send a video",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            },
+            "asNote": {
+              "type": "boolean",
+              "description": "Send as video note (aka instant or round video)."
+            },
+            "convert": {
+              "type": "boolean",
+              "description": "Convert the input file to the required format using ffmpeg before sending"
+            },
+            "caption": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId",
+            "convert"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_sticker": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendSticker",
+    "readonly": false,
+    "sending": true,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Send a sticker",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_link_custom_preview": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/send/link-custom-preview",
+    "readonly": false,
+    "sending": true,
+    "media": true,
+    "media_path": [
+      "preview",
+      "image"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Send a text message with a CUSTOM link preview.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "text": {
+              "type": "string",
+              "description": "The text to send. MUST include the URL provided in preview.url"
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            },
+            "linkPreviewHighQuality": {
+              "type": "boolean"
+            },
+            "preview": {
+              "type": "object",
+              "properties": {
+                "url": {
+                  "type": "string"
+                },
+                "title": {
+                  "type": "string"
+                },
+                "description": {
+                  "type": "string"
+                }
+              },
+              "required": [
+                "url",
+                "title",
+                "description"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "chatId",
+            "text",
+            "preview"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_list": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendList",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Send a list message (interactive)",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string",
+              "pattern": "^[0-9]{5,25}@(c\\.us|s\\.whatsapp\\.net|lid)$",
+              "description": "Exact direct-chat PN/LID ID. Groups, broadcasts and channels are not supported for lists."
+            },
+            "message": {
+              "allOf": [
+                {
+                  "type": "object",
+                  "properties": {
+                    "title": {
+                      "type": "string"
+                    },
+                    "description": {
+                      "type": "string"
+                    },
+                    "footer": {
+                      "type": "string"
+                    },
+                    "button": {
+                      "type": "string"
+                    },
+                    "sections": {
+                      "type": "array",
+                      "items": {
+                        "type": "object",
+                        "properties": {
+                          "title": {
+                            "type": "string"
+                          },
+                          "rows": {
+                            "type": "array",
+                            "items": {
+                              "type": "object",
+                              "properties": {
+                                "title": {
+                                  "type": "string"
+                                },
+                                "description": {
+                                  "type": "string"
+                                },
+                                "rowId": {
+                                  "type": "string"
+                                }
+                              },
+                              "required": [
+                                "title",
+                                "rowId"
+                              ],
+                              "additionalProperties": false
+                            }
+                          }
+                        },
+                        "required": [
+                          "title",
+                          "rows"
+                        ],
+                        "additionalProperties": false
+                      }
+                    }
+                  },
+                  "required": [
+                    "title",
+                    "button",
+                    "sections"
+                  ],
+                  "additionalProperties": false
+                }
+              ]
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            }
+          },
+          "required": [
+            "chatId",
+            "message"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_forward_message": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/forwardMessage",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "forwardMessage",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string",
+              "description": "Pre-generated message id"
+            },
+            "messageId": {
+              "type": "string",
+              "minLength": 1,
+              "maxLength": 512,
+              "description": "Complete provider message ID including source chat; verified live without importing history. Known removals, uncertain clear coverage and superseded edits prevent forwarding."
+            }
+          },
+          "required": [
+            "chatId",
+            "messageId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_seen": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendSeen",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "sendSeen",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "messageId": {
+              "type": "string",
+              "deprecated": true
+            },
+            "messageIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "participant": {
+              "type": "string",
+              "description": "NOWEB engine only - the ID of the user that sent the message (undefined for individual chats)"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_start_typing": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/startTyping",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "startTyping",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_stop_typing": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/stopTyping",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "stopTyping",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_set_reaction": {
+    "family": "messages",
+    "method": "PUT",
+    "path": "/api/reaction",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "React to a message with an emoji",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "messageId": {
+              "type": "string"
+            },
+            "reaction": {
+              "type": "string",
+              "description": "Emoji to react with. Send an empty string to remove the reaction"
+            }
+          },
+          "required": [
+            "messageId",
+            "reaction"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_set_star": {
+    "family": "messages",
+    "method": "PUT",
+    "path": "/api/star",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gows_ab_v1",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Star or unstar a message",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "messageId": {
+              "type": "string"
+            },
+            "chatId": {
+              "type": "string"
+            },
+            "star": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "messageId",
+            "chatId",
+            "star"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_location": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendLocation",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "sendLocation",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string",
+              "description": "Pre-generated message id"
+            },
+            "latitude": {
+              "type": "number",
+              "minimum": -90,
+              "maximum": 90
+            },
+            "longitude": {
+              "type": "number",
+              "minimum": -180,
+              "maximum": 180
+            },
+            "title": {
+              "type": "string"
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            }
+          },
+          "required": [
+            "chatId",
+            "latitude",
+            "longitude",
+            "title"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_contact_vcard": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/sendContactVcard",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "body"
+    ],
+    "description": "sendContactVcard",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "id": {
+              "type": "string",
+              "description": "Pre-generated message id"
+            },
+            "contacts": {
+              "type": "array",
+              "items": {
+                "oneOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "vcard": {
+                        "type": "string",
+                        "description": "The vcard string"
+                      }
+                    },
+                    "required": [
+                      "vcard"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "object",
+                    "properties": {
+                      "fullName": {
+                        "type": "string",
+                        "description": "The full name of the contact"
+                      },
+                      "organization": {
+                        "type": "string",
+                        "description": "The organization of the contact"
+                      },
+                      "phoneNumber": {
+                        "type": "string",
+                        "description": "The phone number of the contact"
+                      },
+                      "whatsappId": {
+                        "type": "string",
+                        "description": "The whatsapp id of the contact. DO NOT add + or @c.us"
+                      },
+                      "vcard": {
+                        "type": "string",
+                        "description": "Optional raw vCard override; generated from the structured contact when omitted."
+                      }
+                    },
+                    "required": [
+                      "fullName",
+                      "phoneNumber"
+                    ],
+                    "additionalProperties": false
+                  }
+                ]
+              }
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            }
+          },
+          "required": [
+            "chatId",
+            "contacts"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "messages_send_buttons_reply": {
+    "family": "messages",
+    "method": "POST",
+    "path": "/api/send/buttons/reply",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "unsupported_gows",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Reply on a button message",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "replyTo": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            },
+            "selectedDisplayText": {
+              "type": "string"
+            },
+            "selectedButtonID": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId",
+            "selectedDisplayText",
+            "selectedButtonID"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "chats_get_chats": {
+    "family": "chats",
+    "method": "GET",
+    "path": "/api/{session}/chats",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get chats",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "sortBy": {
+              "enum": [
+                "conversationTimestamp",
+                "id",
+                "name"
+              ],
+              "type": "string"
+            },
+            "sortOrder": {
+              "enum": [
+                "desc",
+                "asc"
+              ],
+              "type": "string"
+            },
+            "merge": {
+              "type": "boolean"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "chats_get_chats_overview": {
+    "family": "chats",
+    "method": "GET",
+    "path": "/api/{session}/chats/overview",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get chats overview. Includes all necessary things to build UI \"your chats overview\" page - chat id, name, picture, last message. Sorting by last message timestamp",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "merge": {
+              "type": "boolean"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "ids": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "chats_delete_chat": {
+    "family": "chats",
+    "method": "DELETE",
+    "path": "/api/{session}/chats/{chatId}",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "unsupported_gows",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Deletes the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "chats_get_chat_picture": {
+    "family": "chats",
+    "method": "GET",
+    "path": "/api/{session}/chats/{chatId}/picture",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Gets chat picture",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "refresh": {
+              "type": "boolean"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "chats_get_chat_messages": {
+    "family": "chats",
+    "method": "GET",
+    "path": "/api/{session}/chats/{chatId}/messages",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Gets messages in the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "sortBy": {
+              "enum": [
+                "timestamp",
+                "messageTimestamp"
+              ],
+              "type": "string"
+            },
+            "sortOrder": {
+              "enum": [
+                "desc",
+                "asc"
+              ],
+              "type": "string"
+            },
+            "downloadMedia": {
+              "type": "boolean"
+            },
+            "downloadMediaMimetypes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "merge": {
+              "type": "boolean"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "filter.timestamp.lte": {
+              "type": "number"
+            },
+            "filter.timestamp.gte": {
+              "type": "number"
+            },
+            "filter.fromMe": {
+              "type": "boolean"
+            },
+            "filter.ack": {
+              "enum": [
+                "ERROR",
+                "PENDING",
+                "SERVER",
+                "DEVICE",
+                "READ",
+                "PLAYED"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [
+            "limit"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "query"
+      ]
+    }
+  },
+  "chats_clear_messages": {
+    "family": "chats",
+    "method": "DELETE",
+    "path": "/api/{session}/chats/{chatId}/messages",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "unsupported_gows",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Clears all messages from the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "chats_read_chat_messages": {
+    "family": "chats",
+    "method": "POST",
+    "path": "/api/{session}/chats/{chatId}/messages/read",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Read unread messages in the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "messages": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Maximum unread messages to mark read (1..100 local limit). Omit for 30 in direct chats or 100 in groups."
+            },
+            "days": {
+              "type": "number",
+              "minimum": 0,
+              "description": "Non-negative age window in days; fractional days are supported. Omit for 7 days."
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "chats_get_chat_message": {
+    "family": "chats",
+    "method": "GET",
+    "path": "/api/{session}/chats/{chatId}/messages/{messageId}",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Gets message by id",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "messageId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId",
+            "messageId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "downloadMedia": {
+              "type": "boolean"
+            },
+            "downloadMediaMimetypes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "merge": {
+              "type": "boolean"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "chats_delete_message": {
+    "family": "chats",
+    "method": "DELETE",
+    "path": "/api/{session}/chats/{chatId}/messages/{messageId}",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Deletes a message from the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "messageId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId",
+            "messageId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "chats_edit_message": {
+    "family": "chats",
+    "method": "PUT",
+    "path": "/api/{session}/chats/{chatId}/messages/{messageId}",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Edits a message in the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "messageId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId",
+            "messageId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string"
+            },
+            "linkPreview": {
+              "type": "boolean",
+              "const": false,
+              "description": "Automatic link previews are disabled; omit or set false."
+            },
+            "linkPreviewHighQuality": {
+              "type": "boolean",
+              "const": false,
+              "description": "Automatic link previews are disabled; omit or set false."
+            }
+          },
+          "required": [
+            "text"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "chats_pin_message": {
+    "family": "chats",
+    "method": "POST",
+    "path": "/api/{session}/chats/{chatId}/messages/{messageId}/pin",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gows_ab_v1",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Pins a message in the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "messageId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId",
+            "messageId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "duration": {
+              "type": "integer",
+              "description": "Duration in seconds. 24 hours (86400), 7 days (604800), 30 days (2592000)",
+              "enum": [
+                86400,
+                604800,
+                2592000
+              ]
+            }
+          },
+          "required": [
+            "duration"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "chats_unpin_message": {
+    "family": "chats",
+    "method": "POST",
+    "path": "/api/{session}/chats/{chatId}/messages/{messageId}/unpin",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gows_ab_v1",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Unpins a message in the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "messageId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId",
+            "messageId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "chats_archive_chat": {
+    "family": "chats",
+    "method": "POST",
+    "path": "/api/{session}/chats/{chatId}/archive",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gows_ab_v1",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Archive the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "chats_unarchive_chat": {
+    "family": "chats",
+    "method": "POST",
+    "path": "/api/{session}/chats/{chatId}/unarchive",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gows_ab_v1",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Unarchive the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "chats_unread_chat": {
+    "family": "chats",
+    "method": "POST",
+    "path": "/api/{session}/chats/{chatId}/unread",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Unread the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "calls_reject_call": {
+    "family": "calls",
+    "method": "POST",
+    "path": "/api/{session}/calls/reject",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Reject incoming call",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "from": {
+              "type": "string",
+              "minLength": 1
+            },
+            "id": {
+              "type": "string",
+              "description": "Call ID",
+              "minLength": 1
+            }
+          },
+          "required": [
+            "from",
+            "id"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "channels_list": {
+    "family": "channels",
+    "method": "GET",
+    "path": "/api/{session}/channels",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get list of know channels",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "role": {
+              "enum": [
+                "OWNER",
+                "ADMIN",
+                "SUBSCRIBER"
+              ],
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "channels_create": {
+    "family": "channels",
+    "method": "POST",
+    "path": "/api/{session}/channels",
+    "readonly": false,
+    "sending": false,
+    "media": true,
+    "media_path": [
+      "picture"
+    ],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Create a new channel.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "channels_delete": {
+    "family": "channels",
+    "method": "DELETE",
+    "path": "/api/{session}/channels/{id}",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "unsupported_gows",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Delete the channel.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "channels_get": {
+    "family": "channels",
+    "method": "GET",
+    "path": "/api/{session}/channels/{id}",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get the channel info",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "channels_preview_channel_messages": {
+    "family": "channels",
+    "method": "GET",
+    "path": "/api/{session}/channels/{id}/messages/preview",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Preview channel messages",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "downloadMediaMimetypes": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "downloadMedia": {
+              "type": "boolean"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            }
+          },
+          "required": [
+            "downloadMedia",
+            "limit"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "query"
+      ]
+    }
+  },
+  "channels_follow": {
+    "family": "channels",
+    "method": "POST",
+    "path": "/api/{session}/channels/{id}/follow",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Follow the channel.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "channels_unfollow": {
+    "family": "channels",
+    "method": "POST",
+    "path": "/api/{session}/channels/{id}/unfollow",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Unfollow the channel.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "channels_mute": {
+    "family": "channels",
+    "method": "POST",
+    "path": "/api/{session}/channels/{id}/mute",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Mute the channel.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "channels_unmute": {
+    "family": "channels",
+    "method": "POST",
+    "path": "/api/{session}/channels/{id}/unmute",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Unmute the channel.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "channels_search_by_view": {
+    "family": "channels",
+    "method": "POST",
+    "path": "/api/{session}/channels/search/by-view",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Search for channels (by view)",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "view": {
+              "type": "string"
+            },
+            "countries": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "minItems": 1
+            },
+            "categories": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Maximum channels per page (1..100 local limit)."
+            },
+            "startCursor": {
+              "type": "string",
+              "default": "",
+              "description": "Omit or use an empty string for the first page; use the returned endCursor for the next page."
+            }
+          },
+          "required": [
+            "view",
+            "countries",
+            "categories",
+            "limit"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "channels_search_by_text": {
+    "family": "channels",
+    "method": "POST",
+    "path": "/api/{session}/channels/search/by-text",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Search for channels (by text)",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "text": {
+              "type": "string",
+              "minLength": 1
+            },
+            "categories": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100,
+              "description": "Maximum channels per page (1..100 local limit)."
+            },
+            "startCursor": {
+              "type": "string",
+              "default": "",
+              "description": "Omit or use an empty string for the first page; use the returned endCursor for the next page."
+            }
+          },
+          "required": [
+            "text",
+            "categories",
+            "limit"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "channels_get_search_views": {
+    "family": "channels",
+    "method": "GET",
+    "path": "/api/{session}/channels/search/views",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get list of views for channel search",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "channels_get_search_countries": {
+    "family": "channels",
+    "method": "GET",
+    "path": "/api/{session}/channels/search/countries",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get list of countries for channel search",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "channels_get_search_categories": {
+    "family": "channels",
+    "method": "GET",
+    "path": "/api/{session}/channels/search/categories",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get list of categories for channel search",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "status_send_text_status": {
+    "family": "status",
+    "method": "POST",
+    "path": "/api/{session}/status/text",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Send text status",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Pre-generated status message id"
+            },
+            "contacts": {
+              "description": "Contact list to send the status to.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "text": {
+              "type": "string"
+            },
+            "backgroundColor": {
+              "type": "string"
+            },
+            "font": {
+              "type": "number"
+            },
+            "linkPreview": {
+              "type": "boolean",
+              "const": false,
+              "description": "Automatic link previews are disabled; omit or set false."
+            },
+            "linkPreviewHighQuality": {
+              "type": "boolean",
+              "const": false,
+              "description": "Automatic link previews are disabled; omit or set false."
+            }
+          },
+          "required": [
+            "text",
+            "backgroundColor",
+            "font"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "status_send_image_status": {
+    "family": "status",
+    "method": "POST",
+    "path": "/api/{session}/status/image",
+    "readonly": false,
+    "sending": true,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Send image status",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Pre-generated status message id"
+            },
+            "contacts": {
+              "description": "Contact list to send the status to.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "caption": {
+              "type": "string"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "status_send_voice_status": {
+    "family": "status",
+    "method": "POST",
+    "path": "/api/{session}/status/voice",
+    "readonly": false,
+    "sending": true,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Send voice status",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Pre-generated status message id"
+            },
+            "contacts": {
+              "description": "Contact list to send the status to.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "convert": {
+              "type": "boolean",
+              "description": "Convert the input file to the required format using ffmpeg before sending"
+            },
+            "backgroundColor": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "convert",
+            "backgroundColor"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "status_send_video_status": {
+    "family": "status",
+    "method": "POST",
+    "path": "/api/{session}/status/video",
+    "readonly": false,
+    "sending": true,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Send video status",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Pre-generated status message id"
+            },
+            "contacts": {
+              "description": "Contact list to send the status to.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "convert": {
+              "type": "boolean",
+              "description": "Convert the input file to the required format using ffmpeg before sending"
+            },
+            "caption": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "convert"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "status_delete_status": {
+    "family": "status",
+    "method": "POST",
+    "path": "/api/{session}/status/delete",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "DELETE sent status",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "description": "Status message id to delete"
+            },
+            "contacts": {
+              "description": "Contact list to send the status to.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            }
+          },
+          "additionalProperties": false,
+          "required": [
+            "id"
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "labels_get_all": {
+    "family": "labels",
+    "method": "GET",
+    "path": "/api/{session}/labels",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get all labels",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "labels_create": {
+    "family": "labels",
+    "method": "POST",
+    "path": "/api/{session}/labels",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Create a new label",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Label name"
+            },
+            "colorHex": {
+              "type": "string",
+              "description": "Color in hex",
+              "enum": [
+                "#ff9485",
+                "#64c4ff",
+                "#ffd429",
+                "#dfaef0",
+                "#99b6c1",
+                "#55ccb3",
+                "#ff9dff",
+                "#d3a91d",
+                "#6d7cce",
+                "#d7e752",
+                "#00d0e2",
+                "#ffc5c7",
+                "#93ceac",
+                "#f74848",
+                "#00a0f2",
+                "#83e422",
+                "#ffaf04",
+                "#b5ebff",
+                "#9ba6ff",
+                "#9368cf"
+              ]
+            },
+            "color": {
+              "type": "integer",
+              "description": "Color index, not hex; the standard palette uses 0..19.",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "required": [
+                "color"
+              ]
+            },
+            {
+              "required": [
+                "colorHex"
+              ]
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "labels_update": {
+    "family": "labels",
+    "method": "PUT",
+    "path": "/api/{session}/labels/{labelId}",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Update a label",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "labelId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "labelId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string",
+              "description": "Label name"
+            },
+            "colorHex": {
+              "type": "string",
+              "description": "Color in hex",
+              "enum": [
+                "#ff9485",
+                "#64c4ff",
+                "#ffd429",
+                "#dfaef0",
+                "#99b6c1",
+                "#55ccb3",
+                "#ff9dff",
+                "#d3a91d",
+                "#6d7cce",
+                "#d7e752",
+                "#00d0e2",
+                "#ffc5c7",
+                "#93ceac",
+                "#f74848",
+                "#00a0f2",
+                "#83e422",
+                "#ffaf04",
+                "#b5ebff",
+                "#9ba6ff",
+                "#9368cf"
+              ]
+            },
+            "color": {
+              "type": "integer",
+              "description": "Color index, not hex; the standard palette uses 0..19.",
+              "minimum": -2147483648,
+              "maximum": 2147483647
+            }
+          },
+          "required": [
+            "name"
+          ],
+          "additionalProperties": false,
+          "oneOf": [
+            {
+              "required": [
+                "color"
+              ]
+            },
+            {
+              "required": [
+                "colorHex"
+              ]
+            }
+          ]
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "labels_delete": {
+    "family": "labels",
+    "method": "DELETE",
+    "path": "/api/{session}/labels/{labelId}",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Delete a label",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "labelId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "labelId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "labels_get_chat_labels": {
+    "family": "labels",
+    "method": "GET",
+    "path": "/api/{session}/labels/chats/{chatId}",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get labels for the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "labels_put_chat_labels": {
+    "family": "labels",
+    "method": "PUT",
+    "path": "/api/{session}/labels/chats/{chatId}",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Save labels for the chat",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "labels": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "description": "Label ID"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "labels"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "labels_get_chats_by_label": {
+    "family": "labels",
+    "method": "GET",
+    "path": "/api/{session}/labels/{labelId}/chats",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "account_and_engine_dependent",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get chats by label",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "labelId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "labelId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "contacts_get_all": {
+    "family": "contacts",
+    "method": "GET",
+    "path": "/api/contacts/all",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "query"
+    ],
+    "description": "Get all contacts",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "sortBy": {
+              "enum": [
+                "id",
+                "name"
+              ],
+              "type": "string"
+            },
+            "sortOrder": {
+              "enum": [
+                "desc",
+                "asc"
+              ],
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "contacts_get": {
+    "family": "contacts",
+    "method": "GET",
+    "path": "/api/contacts",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "query"
+    ],
+    "description": "Get contact basic info",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "contactId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "contactId"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query"
+      ]
+    }
+  },
+  "contacts_check_exists": {
+    "family": "contacts",
+    "method": "GET",
+    "path": "/api/contacts/check-exists",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "query"
+    ],
+    "description": "Check phone number is registered in WhatsApp.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "phone": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "phone"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query"
+      ]
+    }
+  },
+  "contacts_get_about": {
+    "family": "contacts",
+    "method": "GET",
+    "path": "/api/contacts/about",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gows_ab_v1",
+    "inject_session": [
+      "query"
+    ],
+    "description": "Gets the Contact's \"about\" info",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "contactId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "contactId"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query"
+      ]
+    }
+  },
+  "contacts_get_profile_picture": {
+    "family": "contacts",
+    "method": "GET",
+    "path": "/api/contacts/profile-picture",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "query"
+    ],
+    "description": "Get contact's profile picture URL",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "contactId": {
+              "type": "string"
+            },
+            "refresh": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "contactId"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query"
+      ]
+    }
+  },
+  "contacts_block": {
+    "family": "contacts",
+    "method": "POST",
+    "path": "/api/contacts/block",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gows_ab_v1",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Block contact",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "contactId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "contactId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "contacts_unblock": {
+    "family": "contacts",
+    "method": "POST",
+    "path": "/api/contacts/unblock",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gows_ab_v1",
+    "inject_session": [
+      "body"
+    ],
+    "description": "Unblock contact",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "contactId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "contactId"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "contacts_get_session": {
+    "family": "contacts",
+    "method": "GET",
+    "path": "/api/{session}/contacts/{id}",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get contact basic info",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "contacts_put": {
+    "family": "contacts",
+    "method": "PUT",
+    "path": "/api/{session}/contacts/{chatId}",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Create or update contact",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "firstName": {
+              "type": "string",
+              "description": "Contact First Name"
+            },
+            "lastName": {
+              "type": "string",
+              "description": "Contact Last Name"
+            }
+          },
+          "required": [
+            "firstName",
+            "lastName"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "identifiers_get_all": {
+    "family": "identifiers",
+    "method": "GET",
+    "path": "/api/{session}/lids",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get all known lids to phone number mapping",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "identifiers_get_lids_count": {
+    "family": "identifiers",
+    "method": "GET",
+    "path": "/api/{session}/lids/count",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get the number of known lids",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "identifiers_find_p_n_by_lid": {
+    "family": "identifiers",
+    "method": "GET",
+    "path": "/api/{session}/lids/{lid}",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get phone number by lid",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "lid": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "lid"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "identifiers_find_l_i_d_by_phone_number": {
+    "family": "identifiers",
+    "method": "GET",
+    "path": "/api/{session}/lids/pn/{phoneNumber}",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get lid by phone number (chat id)",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "phoneNumber": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "phoneNumber"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_create_group": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Create a new group.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "name": {
+              "type": "string"
+            },
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "name",
+            "participants"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "groups_get_groups": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get all groups.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "sortBy": {
+              "enum": [
+                "id",
+                "subject"
+              ],
+              "type": "string"
+            },
+            "sortOrder": {
+              "enum": [
+                "desc",
+                "asc"
+              ],
+              "type": "string"
+            },
+            "limit": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 100
+            },
+            "offset": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "exclude": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "enum": [
+                  "",
+                  "participants"
+                ]
+              }
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "groups_join_info_group": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/join-info",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get info about the group before joining.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "query"
+      ]
+    }
+  },
+  "groups_join_group": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/join",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Join group via code",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "code": {
+              "type": "string",
+              "description": "Group code (123) or url (https://chat.whatsapp.com/123)"
+            }
+          },
+          "required": [
+            "code"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "groups_get_groups_count": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/count",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get the number of groups.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "groups_refresh_groups": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/refresh",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Refresh groups from the server.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "groups_get_group": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get the group.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_delete_group": {
+    "family": "groups",
+    "method": "DELETE",
+    "path": "/api/{session}/groups/{id}",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "unsupported_gows",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Delete the group.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_leave_group": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/{id}/leave",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Leave the group.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_get_chat_picture": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/picture",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get group picture",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {
+            "refresh": {
+              "type": "boolean"
+            }
+          },
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_set_picture": {
+    "family": "groups",
+    "method": "PUT",
+    "path": "/api/{session}/groups/{id}/picture",
+    "readonly": false,
+    "sending": false,
+    "media": true,
+    "media_path": [
+      "file"
+    ],
+    "media_required": true,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Set group picture",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_delete_picture": {
+    "family": "groups",
+    "method": "DELETE",
+    "path": "/api/{session}/groups/{id}/picture",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Delete group picture",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_set_description": {
+    "family": "groups",
+    "method": "PUT",
+    "path": "/api/{session}/groups/{id}/description",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Updates the group description.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "description": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "description"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_set_subject": {
+    "family": "groups",
+    "method": "PUT",
+    "path": "/api/{session}/groups/{id}/subject",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Updates the group subject",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "subject": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "subject"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_set_info_admin_only": {
+    "family": "groups",
+    "method": "PUT",
+    "path": "/api/{session}/groups/{id}/settings/security/info-admin-only",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Updates the group \"info admin only\" settings.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "adminsOnly": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "adminsOnly"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_get_info_admin_only": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/settings/security/info-admin-only",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get the group's 'info admin only' settings.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_set_messages_admin_only": {
+    "family": "groups",
+    "method": "PUT",
+    "path": "/api/{session}/groups/{id}/settings/security/messages-admin-only",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Update settings - who can send messages",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "adminsOnly": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "adminsOnly"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_get_messages_admin_only": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/settings/security/messages-admin-only",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get settings - who can send messages",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_set_member_add_mode": {
+    "family": "groups",
+    "method": "PUT",
+    "path": "/api/{session}/groups/{id}/settings/security/member-add-mode",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Update settings - who can add new members",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "membersCanAddNewMember": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "membersCanAddNewMember"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_get_member_add_mode": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/settings/security/member-add-mode",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get settings - who can add new members",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_set_membership_approval_mode": {
+    "family": "groups",
+    "method": "PUT",
+    "path": "/api/{session}/groups/{id}/settings/security/membership-approval",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Update settings - approve new members",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "newMembersApprovalRequired": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "newMembersApprovalRequired"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_get_membership_approval_mode": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/settings/security/membership-approval",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get settings - approve new members",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_get_group_join_requests": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/participants/join-requests",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get pending requests to join the group. Requires the connected WhatsApp account to be a group administrator; OAuth read consent alone does not grant this role.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_approve_group_join_requests": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/{id}/participants/join-requests/approve",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Approve pending requests to join the group",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "participants"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_reject_group_join_requests": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/{id}/participants/join-requests/reject",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Reject pending requests to join the group",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "participants"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_get_invite_code": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/invite-code",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Gets the invite code for the group.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_revoke_invite_code": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/{id}/invite-code/revoke",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Invalidates the current group invite code and generates a new one.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_get_participants": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/participants",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get participants",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_get_group_participants": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/participants/v2",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get group participants.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_add_participants": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/{id}/participants/add",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Add participants",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "participants"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_remove_participants": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/{id}/participants/remove",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Remove participants",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "participants"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_promote_to_admin": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/{id}/admin/promote",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Promote participants to admin users.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "participants"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "groups_demote_to_admin": {
+    "family": "groups",
+    "method": "POST",
+    "path": "/api/{session}/groups/{id}/admin/demote",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Demotes participants to regular users.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "participants": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string"
+                  }
+                },
+                "required": [
+                  "id"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "participants"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "presence_set_presence": {
+    "family": "presence",
+    "method": "POST",
+    "path": "/api/{session}/presence",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Set session presence",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string",
+              "description": "Chat ID - either group id or contact id. Required for chat-related presence statuses; omit for ONLINE/OFFLINE."
+            },
+            "presence": {
+              "type": "string",
+              "enum": [
+                "offline",
+                "online",
+                "typing",
+                "recording",
+                "paused"
+              ]
+            }
+          },
+          "required": [
+            "presence"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "presence_get_presence_all": {
+    "family": "presence",
+    "method": "GET",
+    "path": "/api/{session}/presence",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get all subscribed presence information.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "presence_get_presence": {
+    "family": "presence",
+    "method": "GET",
+    "path": "/api/{session}/presence/{chatId}",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get the presence for the chat id. If it hasn't been subscribed - it also subscribes to it.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "presence_subscribe": {
+    "family": "presence",
+    "method": "POST",
+    "path": "/api/{session}/presence/{chatId}/subscribe",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Subscribe to presence events for the chat.",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "chatId"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "calendar_send_event": {
+    "family": "calendar",
+    "method": "POST",
+    "path": "/api/{session}/events",
+    "readonly": false,
+    "sending": true,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Send an event message",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "chatId": {
+              "type": "string"
+            },
+            "reply_to": {
+              "type": "string",
+              "description": "The ID of the message to reply to - false_11111111111@c.us_AAAAAAAAAAAAAAAAAAAA"
+            },
+            "event": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "description": "Name of the event"
+                },
+                "description": {
+                  "type": "string",
+                  "description": "Description of the event"
+                },
+                "startTime": {
+                  "type": "integer",
+                  "description": "Start time in Unix seconds, not milliseconds. endTime must not precede startTime.",
+                  "minimum": 0,
+                  "maximum": 253402300799
+                },
+                "endTime": {
+                  "type": "integer",
+                  "description": "End time in Unix seconds, not milliseconds. endTime must not precede startTime.",
+                  "minimum": 0,
+                  "maximum": 253402300799
+                },
+                "location": {
+                  "description": "Location of the event",
+                  "allOf": [
+                    {
+                      "type": "object",
+                      "properties": {
+                        "name": {
+                          "type": "string",
+                          "description": "Name of the location"
+                        }
+                      },
+                      "required": [
+                        "name"
+                      ],
+                      "additionalProperties": false
+                    }
+                  ]
+                },
+                "extraGuestsAllowed": {
+                  "type": "boolean",
+                  "description": "Whether extra guests are allowed"
+                }
+              },
+              "required": [
+                "name",
+                "startTime"
+              ],
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "chatId",
+            "event"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "groups_get_member_share_history_mode": {
+    "family": "groups",
+    "method": "GET",
+    "path": "/api/{session}/groups/{id}/settings/security/member-share-history-mode",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get settings - members can send message history to new members",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path"
+      ]
+    }
+  },
+  "groups_set_member_share_history_mode": {
+    "family": "groups",
+    "method": "PUT",
+    "path": "/api/{session}/groups/{id}/settings/security/member-share-history-mode",
+    "readonly": false,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Update settings - members can send message history to new members",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string"
+            }
+          },
+          "required": [
+            "id"
+          ],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "membersCanShareHistory": {
+              "type": "boolean"
+            }
+          },
+          "required": [
+            "membersCanShareHistory"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "path",
+        "body"
+      ]
+    }
+  },
+  "chats_post_chats_overview": {
+    "family": "chats",
+    "method": "POST",
+    "path": "/api/{session}/chats/overview",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Get chats overview. Use POST if you have too many \"ids\" params - GET can limit it",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {
+            "pagination": {
+              "type": "object",
+              "properties": {
+                "merge": {
+                  "type": "boolean"
+                },
+                "limit": {
+                  "type": "integer",
+                  "minimum": 1,
+                  "maximum": 100
+                },
+                "offset": {
+                  "type": "integer",
+                  "minimum": 0
+                }
+              },
+              "additionalProperties": false
+            },
+            "filter": {
+              "type": "object",
+              "properties": {
+                "ids": {
+                  "type": "array",
+                  "items": {
+                    "type": "string"
+                  },
+                  "description": "Filter by chat ids"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "required": [
+            "pagination"
+          ],
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false,
+      "required": [
+        "body"
+      ]
+    }
+  },
+  "sessions_fetch_message_capping": {
+    "family": "sessions",
+    "method": "GET",
+    "path": "/api/sessions/{session}/capping",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Fetch the account new-chat message capping (per-cycle quota)",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "sessions_fetch_reachout_timelock": {
+    "family": "sessions",
+    "method": "GET",
+    "path": "/api/sessions/{session}/timelock",
+    "readonly": true,
+    "sending": false,
+    "media": false,
+    "media_path": [],
+    "media_required": false,
+    "capability": "gateway_available",
+    "inject_session": [
+      "path"
+    ],
+    "description": "Fetch the account reachout timelock state",
+    "schema": {
+      "type": "object",
+      "properties": {
+        "path": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "query": {
+          "type": "object",
+          "properties": {},
+          "required": [],
+          "additionalProperties": false
+        },
+        "body": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

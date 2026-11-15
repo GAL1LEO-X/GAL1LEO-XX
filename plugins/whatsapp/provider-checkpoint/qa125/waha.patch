@@ -1,0 +1,105 @@
+diff --git a/checkpoints/offline-ab/qa125.test.cjs b/checkpoints/offline-ab/qa125.test.cjs
+new file mode 100644
+index 0000000..f317884
+--- /dev/null
++++ b/checkpoints/offline-ab/qa125.test.cjs
+@@ -0,0 +1,38 @@
++// Actual source-extracted methods; inert cache/hooks and A/B adapter, no session.
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const path = require('node:path');
++const vm = require('node:vm');
++const ts = require('typescript');
++
++function sourceMethods(file, className, names) {
++  const source = ts.createSourceFile(file, fs.readFileSync(path.resolve(__dirname, '../../', file), 'utf8'), ts.ScriptTarget.Latest, true);
++  const klass = source.statements.find(s => ts.isClassDeclaration(s) && s.name.text === className);
++  assert.ok(klass);
++  return names.map(name => {
++    const method = klass.members.find(m => ts.isMethodDeclaration(m) && m.name.getText(source) === name);
++    assert.ok(method, name);
++    // Remove decorators through the AST, preserving the actual method body.
++    const clean = ts.factory.updateMethodDeclaration(method, method.modifiers?.filter(m => m.kind !== ts.SyntaxKind.Decorator), method.asteriskToken, method.name, method.questionToken, method.typeParameters,
++      method.parameters.map(p => ts.factory.updateParameterDeclaration(p, p.modifiers?.filter(m => m.kind !== ts.SyntaxKind.Decorator), p.dotDotDotToken, p.name, p.questionToken, p.type, p.initializer)), method.type, method.body);
++    return ts.createPrinter().printNode(ts.EmitHint.Unspecified, clean, source);
++  }).join('\n');
++}
++function fixture(methods, bindings) {
++  const code = ts.transpileModule('class Fixture {\n' + methods + '\n}', {compilerOptions: {target: ts.ScriptTarget.ES2020}}).outputText;
++  return vm.runInNewContext(code + '\nFixture', bindings);
++}
++const methods = sourceMethods('src/core/engines/gows/session.gows.core.ts','WhatsappSessionGoWSCore',['observeTransportStatus']);
++for (const cause of ['disconnected','keepalive_timeout']) {
++ test('QA125 transport cause is retained without envelope: '+cause, () => {
++  const Fixture=fixture(methods,{WAHASessionStatus:{STARTING:'STARTING',WORKING:'WORKING'}});
++  const session=new Fixture();session.status='WORKING';const rows=[];
++  session.logger={warn:(fields)=>rows.push({level:'warning',...fields}),info:(fields)=>rows.push({level:'info',...fields})};
++  session.observeTransportStatus('STARTING',cause);session.observeTransportStatus('STARTING',cause);
++  session.observeTransportStatus('WORKING','connected');
++  assert.equal(session.status,'WORKING');assert.equal(rows.length,2);
++  assert.equal(rows[0].cause,cause);assert.equal(rows[0].previous_state,'WORKING');
++  assert.equal(rows[1].cause,'connected');assert.deepEqual(Object.keys(rows[0]).sort(),['cause','event','level','previous_state','state']);
++ });
++}
+diff --git a/src/core/engines/gows/session.gows.core.ts b/src/core/engines/gows/session.gows.core.ts
+index c5fccfc..50fa3f4 100644
+--- a/src/core/engines/gows/session.gows.core.ts
++++ b/src/core/engines/gows/session.gows.core.ts
+@@ -426,12 +426,33 @@ export class WhatsappSessionGoWSCore extends WhatsappSession {
+     );
+   }
+ 
++  protected observeTransportStatus(
++    next: WAHASessionStatus,
++    cause: 'connected' | 'disconnected' | 'keepalive_timeout' | 'keepalive_restored',
++  ) {
++    const previous = this.status;
++    this.status = next;
++    if (previous === next) return;
++    const fields = {
++      event: 'gows.connection.transition',
++      state: next,
++      previous_state: previous,
++      cause,
++    };
++    // Fixed technical fields only: never log the event envelope or account data.
++    if (next === WAHASessionStatus.STARTING) {
++      this.logger.warn(fields, 'WhatsApp transport state changed');
++    } else {
++      this.logger.info(fields, 'WhatsApp transport state changed');
++    }
++  }
++
+   subscribeEvents() {
+     // Handle connection status
+     this.events = new EventsFromObservable<WhatsMeowEvent>(this.all$);
+     const events = this.events;
+     events.on(WhatsMeowEvent.CONNECTED, (data) => {
+-      this.status = WAHASessionStatus.WORKING;
++      this.observeTransportStatus(WAHASessionStatus.WORKING, 'connected');
+       this.me = {
+         id: toCusFormat(esm.b.jidNormalizedUser(data.ID)),
+         pushName: data.PushName,
+@@ -444,18 +465,18 @@ export class WhatsappSessionGoWSCore extends WhatsappSession {
+     events.on(WhatsMeowEvent.DISCONNECTED, () => {
+       if (this.status != WAHASessionStatus.STARTING) {
+         this.presence = null;
+-        this.status = WAHASessionStatus.STARTING;
++        this.observeTransportStatus(WAHASessionStatus.STARTING, 'disconnected');
+       }
+     });
+     events.on(WhatsMeowEvent.KEEP_ALIVE_TIMEOUT, () => {
+       if (this.status != WAHASessionStatus.STARTING) {
+         this.presence = null;
+-        this.status = WAHASessionStatus.STARTING;
++        this.observeTransportStatus(WAHASessionStatus.STARTING, 'keepalive_timeout');
+       }
+     });
+     events.on(WhatsMeowEvent.KEEP_ALIVE_RESTORED, () => {
+       if (this.status != WAHASessionStatus.WORKING) {
+-        this.status = WAHASessionStatus.WORKING;
++        this.observeTransportStatus(WAHASessionStatus.WORKING, 'keepalive_restored');
+       }
+     });
+     events.on(WhatsMeowEvent.QR_CHANNEL_ITEM, async (data) => {

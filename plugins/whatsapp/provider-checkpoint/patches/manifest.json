@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "purpose": "Reapplicable companion provider source patches for gows-ab-v1; no binaries, sessions or dependency source archives.",
+  "providers": [
+    {
+      "name": "gows",
+      "upstream_url": "https://github.com/devlikeapro/gows-plus.git",
+      "upstream_version": "v1.0.49",
+      "base_commit": "5f093fe7c38c41faead8e6ce78ee70cb7f815404",
+      "base_tree": "e86e9125b4cbc07bb2caa73723a91a700340a2b1",
+      "local_checkpoint_commit": "33b25dbe8697896050adcc7e69c5d4645e04714e",
+      "patched_tree": "d9152004928b121dc4794e8843e38be763126d00",
+      "patch": "gows.patch",
+      "patch_bytes": 221634,
+      "patch_sha256": "6c742094143dcec01f6eb03076bf36363ab717bfc412a67ea88c693e11c26df2"
+    },
+    {
+      "name": "waha",
+      "upstream_url": "https://github.com/devlikeapro/waha.git",
+      "upstream_version": "2026.9.2",
+      "base_commit": "90ba445a0e765701c8910f0fac08176250c3e0fd",
+      "base_tree": "bd1d6b6c79b3e34a777f20d87a6705a432ce8e4c",
+      "local_checkpoint_commit": "d214c874eb009a3921b80e92e4c13928ddd38550",
+      "patched_tree": "7eff6a71bcf6077b1253a0d3cf7e8ed39da045e9",
+      "patch": "waha.patch",
+      "patch_bytes": 403544,
+      "patch_sha256": "7c4579efc8fdbbff8f4379557f532e501380d95e386f94dd8d98fe3f5969d4ae"
+    }
+  ],
+  "patch_validation": {
+    "method": "Private GIT_INDEX_FILE; read-tree exact upstream base; git apply --check --cached --whitespace=error-all; git apply --cached; git write-tree compared with the committed provider source.",
+    "result": "Both resulting trees equal patched_tree.",
+    "local_commit_note": "Checkpoint commits identify provenance, not commits published upstream. Applying patches reproduces trees, not commit identity."
+  },
+  "protobuf": {
+    "contract_sha256": "ccfc9972d9441e8973385533f9d2322345eb9679a8da8b9e1a32b2c61d5b5f01",
+    "gows": {
+      "source": "proto/gows.proto",
+      "go": "1.26.4",
+      "protoc": "3.21.12",
+      "protoc-gen-go": "1.36.12",
+      "protoc-gen-go-grpc": "1.5.1",
+      "generated_files_tracked": false,
+      "generated_sha256": {
+        "src/proto/gows.pb.go": "6b2df06653229f51fa98fdaf138caad1aec976264995057119cb37fd1071e57d",
+        "src/proto/gows_grpc.pb.go": "55a01e03aa52bd58865435d6bcf5901707ee7d38e5874ee2b62628857895586e"
+      }
+    },
+    "waha": {
+      "source": "src/core/engines/gows/proto/gows.proto",
+      "node": "24.19.0",
+      "yarn": "4.17.1",
+      "grpc-tools": "1.13.0",
+      "protoc-gen-ts": "0.8.7",
+      "generated_files_tracked": true,
+      "generated_directory": "src/core/engines/gows/grpc",
+      "generated_sha256": {
+        "gows.ts": "fce4f7516e006ef81566fcad597fdaea2f7a4effd3ae35c9d9d6aa95511093da",
+        "gows_pb.js": "0eafbc898bde0b6b18cd3184d9a9042d532cf01419ef5f4815c609590eaeee84",
+        "gows_grpc_pb.js": "c6d435bdf6e019792ddd9b0c1b37bc29d0676c57dcc29b1b61f0ad2d295709e0"
+      }
+    }
+  },
+  "licenses": {
+    "upstream_license_file": "APACHE-2.0.txt",
+    "upstream_license_sha256": "c71d239df91726fc519c6eb72d318ec65820627232b2f796219e87dcf35d0ab4",
+    "scope": "Both provider LICENSE files are byte-identical Apache-2.0. WAHA package metadata remains UNLICENSED. Dependency, dashboard and compiled image licensing are separate; see README.md."
+  },
+  "recipes": {
+    "Dockerfile": {
+      "sha256": "a1175d50232b0ed67fcf4890de971b9ac56c1568c069fd215c1124451c80dc02"
+    },
+    ".dockerignore": {
+      "sha256": "c4253ec47058b8122d9d10738c64ded7e75b869e56c3304e347ef33e6d216834"
+    },
+    "Dockerfile.gows-builder": {
+      "sha256": "8e98c716d9d837ca589a69fbc2d4e0020a92ee42ccfed82b1d6347e04528c321"
+    }
+  },
+  "previous_qualification": {
+    "applies_to_backend": "0.6.0",
+    "not_valid_for_current_sources": true,
+    "gows_linux_amd64_sha256": "4a5b547226c5f2b4cc0267d7b040f2094cccbccdc278f5a04a5ff1afb606afae",
+    "gows_reproducibility": "Two clean paths with independent empty caches and vendored dependencies, network disabled: byte-identical CGO binaries. Not a full image reproducibility claim.",
+    "runtime_image_config_id": "sha256:fc282e9ec0b9350ad760a35ac5dafb0498e70c78f0e0e715596354dd819f930d",
+    "runtime_oci_manifest_digest": "sha256:478cedc947b8627c17a9f94fd22cc5098ea298df85eef7e7e5b8def2cfd3b7c2",
+    "runtime_oci_archive_sha256": "af2178462b35d374be0766ca9e3f870db52d5ca42b98d0e8e8baa95b691cfa19",
+    "runtime_registry_publication": false,
+    "runtime_recipe_history": "Root filesystem built with worker-restart false, then a config-only derivative restored WAHA_WORKER_RESTART_SESSIONS=true. All eight root filesystem layers were unchanged. The included Dockerfile combines the final semantics; that combined fresh build was not separately executed.",
+    "runtime_smoke": "Network disabled, empty temporary storage, real Nest/Core GOWS startup; API 401 without key, authorized sessions=[], actual stateless GetABContract with exact eight operations; zero lifecycle attempts; GOWS hash/help/ELF/native ABI checks passed.",
+    "limits": "External compiled inputs required. No runtime archive or dependency sources in this directory; no fresh-daemon/Podman/live-account or phone test. No active deployment pin changed."
+  },
+  "qualification": {
+    "status": "isolated_runtime_verified",
+    "gows_linux_amd64_sha256": "66bd25d343ad6748521e02cab675e3189925b90537b048120ec450f909f02be1",
+    "gows_linux_amd64_bytes": 48347592,
+    "gows_reproducibility": "Two independent source paths and empty build caches, pinned compiler, vendored dependencies, networking disabled: byte-identical CGO binaries. Not a full image reproducibility claim.",
+    "gows_tests": {
+      "full": {
+        "passed_including_subtests": 296,
+        "skipped": 29,
+        "failed": 0
+      },
+      "race": {
+        "passed_including_subtests": 243,
+        "skipped": 29,
+        "failed": 0,
+        "data_race_reports": 0
+      }
+    },
+    "limits": "No server deployment or live account/client/phone test; no fresh-daemon or Podman import, no full image byte-reproducibility claim. PostgreSQL not qualified. Source provenance limits are recorded in the separate delivery.",
+    "runtime_image_config_id": "sha256:8f5d564ea20a07e94dbf21caffe99545b3c52a1724ee74c84cd247969b36ea1f",
+    "runtime_oci_manifest_digest": "sha256:e86a530f90a12dc4a71731a2584a69c8ab64171cfc6affdd0b54d5261e39f07e",
+    "runtime_oci_archive_sha256": "3ba915fe433cdd5d6ca046a59a45f9540bafdfd30ca8833afdbd0c38aced2c44",
+    "runtime_oci_archive_bytes": 709468160,
+    "runtime_platform": "linux/amd64",
+    "runtime_registry_publication": false,
+    "runtime_smoke": {
+      "passed": true,
+      "uid": 1000,
+      "network": "none",
+      "read_only_root": true,
+      "capabilities_added": false,
+      "api_statuses": [
+        401,
+        200
+      ],
+      "sessions": [],
+      "ab_contract": "gows-ab-v1",
+      "ab_operations": 8,
+      "gows_hash_elf_loader_help": "passed",
+      "audio": "Compiled real WAV to Ogg/Opus, mono 48 kHz, decoded successfully",
+      "lifecycle_attempts": 0,
+      "build_ca_and_proxy_absent": true
+    },
+    "runtime_vertical": {
+      "passed": true,
+      "nest_tests": 11,
+      "plugin_cases": 13,
+      "ab_operations": 8,
+      "go_backend": "synthetic; no WhatsApp session",
+      "authorization_limit": "Nest fixture overrides auth guard; API authentication and MCP authorization are checked separately."
+    },
+    "runtime_archive_validation": {
+      "passed": true,
+      "layers": 9,
+      "blobs": 11,
+      "docker_compatible_manifest": true
+    },
+    "runtime_import": {
+      "docker": "passed with layers already present",
+      "fresh_daemon": false,
+      "podman": false
+    },
+    "source_inventory": {
+      "debian_binary_packages": 328,
+      "debian_source_versions_collected": 237,
+      "npm_unique_name_versions": 1523,
+      "npm_scope": "Selected copyleft/native sources and installed notices; not every package source or native binary independently rebuilt."
+    }
+  }
+}

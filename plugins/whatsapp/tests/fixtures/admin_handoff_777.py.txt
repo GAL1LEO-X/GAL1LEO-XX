@@ -1,0 +1,710 @@
+"""Forward-only WhatsApp administrative handoff; no implicit host adapter.
+
+Each call advances at most one durable phase. The root coordinator supplies an
+exact manifest, authenticated invoker inventory and a bounded service/process
+provider. This module never pauses BOX, takes its publication lock, retries a
+workload, restores a database, or assumes that replacing Python unloads it.
+All file mutations go through the neutral, independently scoped lifecycle engine.
+"""
+import sys as _installation_sys
+from pathlib import Path as _InstallationPath
+import types as _installation_types
+if 'installation_layout' not in _installation_sys.modules:
+    _installation_source=_InstallationPath(__file__).with_name('installation_layout.py')
+    _installation_module=_installation_types.ModuleType('installation_layout')
+    _installation_module.__file__=str(_installation_source)
+    _installation_sys.modules['installation_layout']=_installation_module
+    try:
+        exec(compile(_installation_source.read_bytes(),str(_installation_source),'exec'),_installation_module.__dict__)
+    except BaseException:
+        _installation_sys.modules.pop('installation_layout',None)
+        raise
+if getattr(_installation_sys.modules['installation_layout'], 'FORMAT', None) != 'whatsapp-installation-v1':
+    raise ImportError('The whatsapp entry point cannot reuse another product installation layout')
+from installation_layout import active as installation_profile, mapped as installation_path
+import ast
+import base64
+import hashlib
+import json
+from pathlib import PurePosixPath
+import re
+
+OWNER = installation_path('/etc/develative-deploy/recovery-owners/whatsapp.json')
+RECEIVER = installation_path('/usr/local/lib/develative-deploy/whatsapp/github_release.py')
+BACKUP_ENTRY = installation_path('/srv/openai-codex/projects/whatsapp-personal/scripts/backup_runtime.py')
+LEGACY_BACKUP_SHA256 = '8c298c576b131ca8beb82fa8733c7a78693e549f7e28e6061030eb340699bd04'
+LEGACY_BACKUP_GUARD = b"raise SystemExit('WhatsApp legacy backup admission closed for administrative handoff')\n"
+TENANT_ENTRY = installation_path('/srv/openai-codex/projects/whatsapp-personal/scripts/tenant_admin.py')
+PROVISION_ENTRY = installation_path('/srv/openai-codex/projects/whatsapp-personal/scripts/provision_host.py')
+# Exact acquired source identities, not inferred release/generation membership.
+LEGACY_DESTINATIONS = {
+    BACKUP_ENTRY: (LEGACY_BACKUP_SHA256, LEGACY_BACKUP_GUARD),
+    TENANT_ENTRY: ('7cd2e214aa74175dc926c542e8a65bcc1bde68d6554431eb39987484e059ecfa',
+        b"raise SystemExit('WhatsApp legacy tenant admission closed for administrative handoff')\n"),
+    PROVISION_ENTRY: ('d1212c5352141d9b781f8c67f23ee842a09cb47746ec5fb6d600eac6df4d23aa',
+        b"raise SystemExit('WhatsApp legacy provisioning admission closed for administrative handoff')\n"),
+}
+RUNTIME = installation_path('/usr/local/lib/develative-deploy/whatsapp/release_runtime.py')
+DISPATCHER = installation_path('/usr/local/lib/develative-deploy/release_recover.py')
+GENERATIONS = installation_path('/usr/local/lib/develative-deploy/whatsapp-generations')
+BOOTSTRAP = installation_path('/usr/local/lib/develative-deploy/whatsapp-bootstrap')
+GENERATION_FILES = frozenset({'installation_layout.py', 'backup_validation.py', 'github_release.py', 'github_release_common.py',
+    'release_backup.py', 'release_build.py', 'release_database.py', 'release_probe.py',
+    'release_recover.py', 'release_runtime.py', 'release_transaction.py', 'state_enrollment.py',
+    'backup_schemas/6.sql', 'backup_schemas/7.sql', 'backup_schemas/8.sql', 'manifest.json'})
+ADMIN_FILES = frozenset({RECEIVER, RUNTIME, BOOTSTRAP + '/installation_layout.py',
+    installation_path('/usr/local/lib/develative-deploy/whatsapp/installation_layout.py'), BOOTSTRAP + '/release_admin.py', BOOTSTRAP + '/release_entry.py',
+    *(installation_path('/srv/openai-codex/projects/whatsapp-personal/scripts/') + name for name in (
+        'installation_layout.py', 'backup_runtime.py', 'package_source.py', 'runtime_lifecycle.py', 'provision_host.py',
+        'tenant_admin.py', 'host_integration.py', 'wa_link.py', 'build_operations.py',
+        'export_plugin.py', 'prepare_authelia.py')),
+    installation_path('/etc/systemd/system/develative-whatsapp-recovery.service'),
+    installation_path('/etc/systemd/system/develative-whatsapp-recovery.timer'),
+    installation_path('/etc/systemd/system/timers.target.wants/develative-whatsapp-recovery.timer')})
+FORMAT = 'whatsapp-admin-handoff-v1'
+PHASES = {
+    'legacy': ('prepared', 'transitioning', 'ingress_closed', 'legacy_reconciled',
+               'dispatcher_cut', 'legacy_drained', 'installed', 'recovery_armed',
+               'owner_dedicated', 'verified'),
+    'fresh': ('prepared', 'transitioning', 'installed', 'recovery_armed',
+              'owner_dedicated', 'verified'),
+    'upgrade': ('prepared', 'retiring', 'previous_drained', 'transitioning',
+                'installed', 'recovery_armed', 'owner_dedicated', 'verified'),
+    'remove': ('prepared', 'retiring', 'invokers_closed', 'drained',
+               'recovery_closed', 'retired', 'removed', 'owner_removed', 'verified'),
+}
+ACTIONS = {'legacy': {'guard_ingress', 'cut_dispatcher', 'install'},
+           'fresh': {'install'}, 'upgrade': {'install'}, 'remove': {'close_invokers', 'remove'}}
+
+
+class HandoffError(ValueError):
+    """Preserve the current owner and journal for explicit inspection."""
+
+
+class Pending(HandoffError):
+    """A bounded observation found work still running; retry after observation."""
+
+
+def require(condition, message):
+    if not condition:
+        raise HandoffError(message)
+
+
+def encoded(value):
+    return (json.dumps(value, sort_keys=True, separators=(',', ':'), allow_nan=False) + '\n').encode()
+
+
+def digest(value):
+    return hashlib.sha256(encoded(value)).hexdigest()
+
+
+def _hex(value, size):
+    return isinstance(value, str) and re.fullmatch('[0-9a-f]{' + str(size) + '}', value) is not None
+
+
+def _path(value):
+    require(isinstance(value, str) and value.startswith('/') and value != '/'
+            and str(PurePosixPath(value)) == value and '..' not in PurePosixPath(value).parts
+            and '\x00' not in value, 'A canonical absolute path is required')
+    return value
+
+
+def guarded_legacy_source(source, expected_sha256):
+    """Close only __main__; preserve imports used by the still-running old timer."""
+    require(type(source) is bytes and _hex(expected_sha256, 64)
+            and hashlib.sha256(source).hexdigest() == expected_sha256,
+            'Legacy source differs from the independently approved digest')
+    try:
+        tree = ast.parse(source)
+        lines = source.decode('utf-8').splitlines(keepends=True)
+    except (SyntaxError, UnicodeError) as error:
+        raise HandoffError('Legacy source must be valid UTF-8 Python') from error
+    position = 0
+    for index, node in enumerate(tree.body):
+        if index == 0 and isinstance(node, ast.Expr) and isinstance(node.value, ast.Constant) and isinstance(node.value.value, str):
+            position = node.end_lineno
+        elif isinstance(node, ast.ImportFrom) and node.module == '__future__':
+            position = node.end_lineno
+        else:
+            break
+    guard = "\nif __name__ == '__main__':\n    raise SystemExit('WhatsApp legacy admission closed for administrative handoff')\n\n"
+    result = ''.join(lines[:position]) + guard + ''.join(lines[position:])
+    compile(result, '<approved-legacy-guard>', 'exec')
+    return result.encode()
+
+
+def guarded_legacy_backup(source):
+    """Close execution and fresh imports before any legacy dependency is loaded.
+
+    The original is retained by the filesystem transaction's quarantine. This
+    guard does not unload Python already running: that generation must drain.
+    """
+    return guarded_legacy_destination(BACKUP_ENTRY, source)
+
+
+def guarded_legacy_destination(path, source):
+    """Close only one of the three exact acquired administrative destinations."""
+    require(path in LEGACY_DESTINATIONS, 'Unsupported legacy destination')
+    expected, guard = LEGACY_DESTINATIONS[path]
+    require(type(source) is bytes and hashlib.sha256(source).hexdigest() == expected,
+            'Legacy destination source differs from the reviewed preimage')
+    return guard
+
+
+def _unique(pairs):
+    value = {}
+    for key, item in pairs:
+        require(key not in value, 'Duplicate JSON field')
+        value[key] = item
+    return value
+
+
+def _read(root, path):
+    try:
+        return json.loads(root.read_bytes(path, max_bytes=1024 * 1024), object_pairs_hook=_unique)
+    except FileNotFoundError:
+        return None
+    except (ValueError, UnicodeError) as error:
+        raise HandoffError('Invalid persistent handoff state') from error
+
+
+def _metadata(value):
+    require(isinstance(value, dict) and set(value) == {'mode', 'uid', 'gid'}
+            and all(type(item) is int and item >= 0 for item in value.values())
+            and value['mode'] == 0o600, 'Control files must have explicit private ownership and mode 0600')
+
+
+def _owner(value, *, state='dedicated'):
+    require(isinstance(value, dict) and set(value) == {'protocol', 'epoch', 'state', 'generation', 'manifest_sha256'}
+            and type(value['protocol']) is int and value['protocol'] == 1
+            and _hex(value['epoch'], 32) and value['state'] == state
+            and _hex(value['manifest_sha256'], 64), 'Invalid expected owner record')
+    _path(value['generation'])
+    require(value['generation'] == GENERATIONS + '/' + value['manifest_sha256'],
+            'Generation must be the content-addressed WhatsApp namespace')
+
+
+
+def _administrative_path(path):
+    if path in ADMIN_FILES:
+        return True
+    if path.startswith(GENERATIONS + '/'):
+        parts = path[len(GENERATIONS) + 1:].split('/', 1)
+        return len(parts) == 2 and _hex(parts[0], 64) and parts[1] in GENERATION_FILES
+    prefix = str(PurePosixPath(RECEIVER).parent) + '/'
+    return path.startswith(prefix) and path[len(prefix):] in GENERATION_FILES - {'manifest.json'}
+
+def validate_plan(plan, payloads, filesystem):
+    required = {'format', 'id', 'mode', 'inventory_digest', 'evidence_digests', 'owner',
+                'previous_owner', 'owner_metadata', 'journal', 'control_directories', 'actions'}
+    if isinstance(plan, dict) and plan.get('mode') == 'remove': required.add('runtime_retirement')
+    require(isinstance(plan, dict) and set(plan) == required and plan['format'] == FORMAT
+            and _hex(plan['id'], 32) and plan['mode'] in PHASES
+            and _hex(plan['inventory_digest'], 64), 'Invalid handoff plan')
+    if plan['mode'] == 'remove':
+        require(isinstance(plan['runtime_retirement'], dict)
+                and set(plan['runtime_retirement']) == {'operation_id'}
+                and _hex(plan['runtime_retirement']['operation_id'], 32),
+                'Removal requires an exact runtime retirement operation')
+    _owner(plan['owner']); _metadata(plan['owner_metadata'])
+    if plan['previous_owner'] is not None:
+        _owner(plan['previous_owner'])
+    require(plan['mode'] != 'remove' or plan['previous_owner'] == plan['owner'],
+            'Removal must name the exact existing owner')
+    require(plan['mode'] != 'fresh' or plan['previous_owner'] is None,
+            'Fresh installation cannot replace an owner')
+    require(plan['mode'] != 'upgrade' or plan['previous_owner'] is not None
+            and plan['previous_owner']['epoch'] != plan['owner']['epoch'],
+            'Upgrade requires the exact dedicated owner and a distinct new epoch')
+    journal = plan['journal']
+    require(isinstance(journal, dict) and set(journal) == {'path', 'mode', 'uid', 'gid'}, 'Invalid journal destination')
+    _metadata({key: value for key, value in journal.items() if key != 'path'})
+    path = _path(journal['path'])
+    require(path.startswith(installation_path('/var/lib/develative-deploy/whatsapp/handoff/')) and path.endswith('.json'),
+            'Handoff journal must be in the dedicated WhatsApp state directory')
+    stages = {'inventory', 'installed'} | ({'legacy_work', 'legacy_all'} if plan['mode'] == 'legacy' else set())
+    if plan['mode'] == 'upgrade': stages.add('previous')
+    if plan['mode'] == 'remove':
+        stages.discard('installed')
+        stages.add('removal')
+    require(isinstance(plan['evidence_digests'], dict) and set(plan['evidence_digests']) == stages
+            and all(_hex(value, 64) for value in plan['evidence_digests'].values()), 'Exact stage inventories are required')
+    require(isinstance(plan['control_directories'], dict), 'Control directories must be explicit')
+    control = {'format': 1, 'owner': 'whatsapp', 'files': {}, 'directories': plan['control_directories']}
+    filesystem.validate_manifest(control)
+    control_parents = {str(parent) for target in (OWNER, path) for parent in PurePosixPath(target).parents if str(parent) != '/'}
+    require(set(plan['control_directories']) <= control_parents, 'Control directory policy is outside WhatsApp control ancestors')
+    require(isinstance(plan['actions'], dict) and set(plan['actions']) == ACTIONS[plan['mode']]
+            and isinstance(payloads, dict) and set(payloads) == set(plan['actions']), 'Exact action and payload sets are required')
+    for name, action in plan['actions'].items():
+        require(isinstance(action, dict) and set(action) == {'before', 'after', 'allowed_paths'}, 'Invalid filesystem action')
+        before, after = (filesystem.validate_manifest(action[key]) for key in ('before', 'after'))
+        require(before['owner'] == after['owner'] and (before['owner'] == 'whatsapp' or name == 'cut_dispatcher'),
+                'Only the approved dispatcher cut may name a different lifecycle owner')
+        paths = set(before['files']) | set(after['files']) | set(before.get('links', {})) | set(after.get('links', {}))
+        if name == 'cut_dispatcher':
+            require(set(before['files']) == set(after['files']) == {DISPATCHER} and not before.get('links') and not after.get('links'),
+                    'Dispatcher cut is restricted to its exact approved source path')
+        else:
+            require(all(_administrative_path(item) for item in paths), 'Action is outside the closed WhatsApp administration path policy')
+        selected_dirs = set(before['directories']) | set(after['directories'])
+        parents = {str(parent) for item in paths for parent in PurePosixPath(item).parents if str(parent) != '/'}
+        require(selected_dirs <= parents, 'Action directory is not an ancestor of a declared artifact')
+        require(OWNER not in paths and path not in paths, 'Actions cannot replace control records')
+        if RUNTIME in paths:
+            require(name == 'install' and plan['mode'] == 'fresh' and RUNTIME not in before['files']
+                    or before['files'].get(RUNTIME) is not None and before['files'].get(RUNTIME) == after['files'].get(RUNTIME),
+                    'The legacy runtime is preserved; only fresh installation may create it')
+        if plan['mode'] == 'remove':
+            # Retiring administration must not strand any surviving launcher or
+            # UID helper after its adjacent installation module is quarantined.
+            for destination in after['files']:
+                dependency = str(PurePosixPath(destination).with_name('installation_layout.py'))
+                if destination.endswith('.py') and dependency in before['files']:
+                    require(after['files'].get(dependency) == before['files'][dependency],
+                            'Retained administrative Python requires its unchanged installation dependency')
+        require(isinstance(action['allowed_paths'], list) and len(set(action['allowed_paths'])) == len(action['allowed_paths']),
+                'Action needs a unique exact path policy')
+        require(set(action['allowed_paths']) == paths | selected_dirs, 'Path policy must exactly match the declared action')
+        for selected in action['allowed_paths']:
+            _path(selected)
+        require(isinstance(payloads[name], dict), 'Invalid action payloads')
+        for target, content in payloads[name].items():
+            require(target in after['files'] and type(content) is bytes
+                    and hashlib.sha256(content).hexdigest() == after['files'][target]['sha256'], 'Action payload differs')
+    if plan['mode'] == 'legacy':
+        gate = plan['actions']['guard_ingress']
+        destinations = {RECEIVER, *LEGACY_DESTINATIONS}
+        require(set(gate['before']['files']) == set(gate['after']['files']) == destinations
+                and not gate['before'].get('links') and not gate['after'].get('links')
+                and set(payloads['guard_ingress']) == destinations,
+                'Legacy guard must replace exactly the four reviewed destinations')
+        install = plan['actions']['install']
+        for destination, (preimage, guard) in LEGACY_DESTINATIONS.items():
+            require(gate['before']['files'][destination]['sha256'] == preimage
+                    and payloads['guard_ingress'][destination] == guard,
+                    'Legacy destination guard must derive from the reviewed preimage')
+            require(install['before']['files'].get(destination) == gate['after']['files'][destination]
+                    and destination in install['after']['files'] and destination in payloads['install']
+                    and install['after']['files'][destination]['sha256'] not in
+                        (preimage, hashlib.sha256(guard).hexdigest()),
+                    'Installation must consume each closed destination and publish its operation-pinned candidate')
+    if plan['mode'] != 'remove':
+        require(RECEIVER in plan['actions']['install']['after']['files'], 'Permanent receiver launcher is required')
+    return digest(plan)
+
+
+def _operation(plan, label):
+    return hashlib.sha256((plan['id'] + ':' + label).encode()).hexdigest()[:32]
+
+
+def _apply(root, plan, label, before, after, payloads, allowed, filesystem, *, inline_payloads=()):
+    operation_id = _operation(plan, label)
+    journal = '/var/lib/develative-host-lifecycle/' + before['owner'] + '/operations/' + operation_id + '/journal.json'
+    try:
+        root.read_bytes(journal)
+    except FileNotFoundError:
+        return filesystem.reconcile(root, operation_id=operation_id, before=before, after=after,
+                                    payloads=payloads, allowed_paths=allowed,
+                                    **({'inline_payloads': inline_payloads} if inline_payloads else {}))
+    receipt = filesystem.resume(root, owner=before['owner'], operation_id=operation_id,
+                                allowed_paths=allowed, payloads=payloads)
+    require(receipt['manifest'] == filesystem.validate_manifest(after), 'Interrupted operation has a different final manifest')
+    return receipt
+
+
+def _control(root, plan, path, value, metadata, label, filesystem):
+    content = encoded(value)
+    current = root.snapshot(path)
+    desired = {'sha256': hashlib.sha256(content).hexdigest(), **metadata, 'retention': 'managed'}
+    directories = plan['control_directories']
+    before_dirs = {name: spec for name, spec in directories.items() if root.directory(name) is not None}
+    before = {'format': 1, 'owner': 'whatsapp', 'files': {} if current is None else {path: {**current, 'retention': 'managed'}},
+              'directories': before_dirs}
+    after = {'format': 1, 'owner': 'whatsapp', 'files': {path: desired}, 'directories': directories}
+    return _apply(root, plan, label, before, after, {path: content}, [path, *directories], filesystem, inline_payloads={path})
+
+
+def _event(fault, name, journal):
+    if fault is not None:
+        fault(name, json.loads(encoded(journal)))
+
+
+def _save(root, plan, journal, filesystem, fault):
+    journal['sequence'] += 1
+    spec = {key: value for key, value in plan['journal'].items() if key != 'path'}
+    _control(root, plan, plan['journal']['path'], journal, spec,
+             'journal-' + str(journal['sequence']), filesystem)
+    _event(fault, 'journal-saved', journal)
+
+
+def _load(root, plan, plan_digest):
+    value = _read(root, plan['journal']['path'])
+    if value is not None:
+        actual = root.snapshot(plan['journal']['path'])
+        require({key: actual[key] for key in ('mode', 'uid', 'gid')} ==
+                {key: plan['journal'][key] for key in ('mode', 'uid', 'gid')}, 'Handoff journal protection differs')
+    if value is None:
+        return None
+    require(isinstance(value, dict) and set(value) == {'format', 'plan_digest', 'phase', 'intent', 'sequence', 'processes', 'evidence'}
+            and value['format'] == FORMAT and value['plan_digest'] == plan_digest
+            and value['phase'] in PHASES[plan['mode']] and type(value['sequence']) is int and value['sequence'] >= 1
+            and isinstance(value['processes'], list) and isinstance(value['evidence'], dict), 'Persistent handoff identity or phase differs')
+    phases = PHASES[plan['mode']]
+    index = phases.index(value['phase'])
+    require(value['intent'] is None or index + 1 < len(phases) and value['intent'] == phases[index + 1], 'Invalid forward phase intent')
+    return value
+
+
+def _observe(plan, plan_digest, stage, prior, provider, evidence, *, initial=False):
+    envelope = provider.inventory(plan, plan_digest) if initial else provider.observe(plan, prior, phase=stage)
+    require(isinstance(envelope, dict) and set(envelope) == {'receipt', 'context', 'now_ns'}, 'Invalid provider evidence envelope')
+    receipt, context = envelope['receipt'], envelope['context']
+    require(context['plan_digest'] == plan_digest, 'Evidence belongs to another handoff plan')
+    expected = receipt['expected']
+    require(evidence.digest_inventory(expected['scope'], expected['manifest'], expected['units'], prior_processes=())
+            == plan['evidence_digests'][stage], 'Stage inventory differs from the approved plan')
+    require(expected['prior_processes'] == prior, 'Observation omitted or changed recorded processes')
+    checked = evidence.verify(receipt, context=context, now_ns=envelope['now_ns'])
+    return envelope, checked
+
+
+def _still_fresh(envelope, evidence, provider):
+    # A provider supplies the collection clock to support synthetic boots. It
+    # exposes now_ns for every consumption under the lock.
+    if envelope is not None:
+        envelope['now_ns'] = provider.now_ns()
+        evidence.verify(envelope['receipt'], context=envelope['context'], now_ns=envelope['now_ns'])
+
+
+def _quiescent(checked, evidence):
+    return (not any(record['state'] not in ('Z', 'X', 'x') for record in checked['processes'])
+            and all(evidence.unit_quiescent(name, unit) for name, unit in checked['units'].items()))
+
+
+def _merged(previous, observed):
+    records = {(item['boot_id'], item['pid'], item['start_ticks']): item for item in previous}
+    records.update({(item['boot_id'], item['pid'], item['start_ticks']): item for item in observed})
+    return sorted(records.values(), key=lambda item: (item['boot_id'], item['pid'], item['start_ticks']))
+
+
+
+def _owner_value(root, plan):
+    snapshot = root.snapshot(OWNER)
+    if snapshot is not None:
+        require({key: snapshot[key] for key in ('mode', 'uid', 'gid')} == plan['owner_metadata'],
+                'Owner record protection differs; automatic repair is forbidden')
+    return _read(root, OWNER)
+
+def _expected_owner(plan, phase):
+    if plan['mode'] == 'remove' and phase in ('owner_removed', 'verified'):
+        return None
+    if phase == 'prepared':
+        return plan['previous_owner']
+    if plan['mode'] == 'upgrade' and phase in ('retiring', 'previous_drained'):
+        return {**plan['previous_owner'], 'state': 'retiring'}
+    if plan['mode'] == 'remove':
+        state = 'retired' if phase in ('retired', 'removed') else 'retiring'
+    else:
+        state = 'dedicated' if phase in ('owner_dedicated', 'verified') else 'transitioning'
+    return {**plan['owner'], 'state': state}
+
+
+def _desired_owner(plan, target):
+    if target == 'owner_removed':
+        return None
+    base = plan['previous_owner'] if plan['mode'] == 'upgrade' and target == 'retiring' else plan['owner']
+    return {**base, 'state': {'owner_dedicated': 'dedicated'}.get(target, target)}
+
+
+
+def _engine_journal(plan, label, owner='whatsapp'):
+    return '/var/lib/develative-host-lifecycle/' + owner + '/operations/' + _operation(plan, label) + '/journal.json'
+
+
+def _resume_control(root, plan, original, plan_digest, filesystem):
+    """Publish the already staged next checkpoint before collecting new evidence."""
+    sequence = 1 if original is None else original['sequence'] + 1
+    label = 'journal-' + str(sequence)
+    operation_path = _engine_journal(plan, label)
+    operation = _read(root, operation_path)
+    if operation is None:
+        return False
+    target = plan['journal']['path']
+    after = filesystem.validate_manifest(operation['after'])
+    require(set(after['files']) == {target} and not after.get('links')
+            and after['directories'] == plan['control_directories'], 'Interrupted checkpoint has an unexpected write set')
+    spec = after['files'][target]
+    require({key: spec[key] for key in ('mode', 'uid', 'gid')} ==
+            {key: plan['journal'][key] for key in ('mode', 'uid', 'gid')}, 'Interrupted checkpoint protection differs')
+    staged = str(PurePosixPath(operation_path).parent) + '/payload-0'
+    try:
+        content = root.read_bytes(staged, max_bytes=1024 * 1024)
+    except FileNotFoundError as error:
+        try:
+            content = base64.b64decode(operation['inline_payloads'][target], validate=True)
+        except (KeyError, ValueError, TypeError) as invalid:
+            raise HandoffError('Checkpoint has no valid durable inline payload; preserve it for inspection') from invalid
+    require(hashlib.sha256(content).hexdigest() == spec['sha256'], 'Interrupted checkpoint payload differs')
+    candidate = json.loads(content, object_pairs_hook=_unique)
+    require(candidate['plan_digest'] == plan_digest and candidate['sequence'] == sequence,
+            'Interrupted checkpoint belongs to another plan or sequence')
+    filesystem.resume(root, owner='whatsapp', operation_id=_operation(plan, label),
+                      allowed_paths=[target, *plan['control_directories']])
+    _load(root, plan, plan_digest)
+    return True
+
+
+def _remove_owner(root, plan, filesystem):
+    current = root.snapshot(OWNER)
+    require(current is not None and _owner_value(root, plan) == {**plan['owner'], 'state': 'retired'},
+            'Only the exact retired owner can be archived')
+    before = {'format': 1, 'owner': 'whatsapp', 'files': {OWNER: {**current, 'retention': 'managed'}}, 'directories': {}}
+    after = {'format': 1, 'owner': 'whatsapp', 'files': {}, 'directories': {}}
+    return _apply(root, plan, 'owner-owner_removed', before, after, {}, [OWNER], filesystem)
+
+
+def _resume_publication(root, plan, original, plan_digest, payloads, provider, filesystem, fault):
+    """Finish only a previously begun publication; no new admission is performed.
+
+    Resuming mixed before/after files first is necessary because neither complete
+    inventory matches a half-published manifest. Owner remains closed, and a new
+    complete process census is mandatory before publishing dedicated admission.
+    """
+    if original is None or original['intent'] is None:
+        return None
+    target = original['intent']
+    name = {'ingress_closed': 'guard_ingress', 'dispatcher_cut': 'cut_dispatcher',
+            'installed': 'install', 'invokers_closed': 'close_invokers', 'removed': 'remove'}.get(target)
+    owner_action = target in ('transitioning', 'retiring', 'owner_dedicated', 'retired', 'owner_removed')
+    if not name and not owner_action:
+        return None
+    label = 'action-' + name if name else 'owner-' + target
+    owner = plan['actions'][name]['before']['owner'] if name else 'whatsapp'
+    if _read(root, _engine_journal(plan, label, owner)) is None:
+        return None
+    desired_owner = _desired_owner(plan, target)
+    current = _owner_value(root, plan)
+    if current != desired_owner and (target == 'owner_dedicated'
+            or plan['mode'] == 'upgrade' and target == 'transitioning'):
+        # Admission and the old-to-new epoch cut both require a fresh census.
+        # A staged owner write is not evidence that old recovery stayed idle
+        # while the controller was absent; retiring still admits its recovery.
+        return None
+    require(current == _expected_owner(plan, original['phase']) or owner_action and current == desired_owner,
+            'Interrupted publication owner barrier changed')
+    if target == 'removed':
+        provider.verify_runtime_retirement(plan)
+        action = plan['actions']['remove']
+        operation = filesystem.inspect_operation(root, owner=owner,
+            operation_id=_operation(plan, label), allowed_paths=action['allowed_paths'])
+        require(all(operation[side] == filesystem.validate_manifest(action[side])
+                    for side in ('before', 'after')),
+                'Interrupted removal differs from the exact approved action')
+        # Only a validated durable intent can delegate changed references to
+        # the engine's exact progress checks. Invariant references still match
+        # their before-state; this never accepts arbitrary mixed snapshots.
+        provider.verify_invokers_absent(plan, resuming_removal=True)
+    elif target == 'owner_removed':
+        provider.verify_runtime_retirement(plan)
+        provider.verify_invokers_absent(plan, after_removal=True)
+    if name:
+        action = plan['actions'][name]
+        if target == 'removed': provider.verify_runtime_retirement(plan)
+        _apply(root, plan, label, action['before'], action['after'], payloads[name], action['allowed_paths'], filesystem)
+    elif target == 'owner_removed':
+        filesystem.resume(root, owner='whatsapp', operation_id=_operation(plan, label), allowed_paths=[OWNER])
+    else:
+        _control(root, plan, OWNER, desired_owner, plan['owner_metadata'], label, filesystem)
+    if target == 'removed':
+        provider.verify_invokers_absent(plan, after_removal=True)
+    journal = json.loads(encoded(original))
+    _event(fault, 'after-' + target, journal)
+    journal['phase'], journal['intent'] = target, None
+    _save(root, plan, journal, filesystem, fault)
+    return {'phase': target, 'pending': False, 'journal': plan['journal']['path']}
+
+def handoff(root, plan, payloads, provider, *, filesystem=None, evidence=None, fault=None):
+    """Advance one phase, or return pending without holding a lock while waiting.
+
+    Provider critical_section(plan) is nonblocking WA publication -> tenant,
+    preserves lock inodes; handoff checks the exact owner barrier under it. It is deliberately
+    not release_admin.publication_lock, which rejects transitioning owners.
+    Provider contract (no implicit host adapter):
+    * inventory(plan, plan_digest) first authenticates the complete external
+      invoker mapping, whose canonical profile digest is inventory_digest.
+    * observe(plan, prior_processes, phase=stage) returns {receipt, context,
+      now_ns}; inventory returns the same envelope with an empty prior list.
+      Receipts are independently verified by host.lifecycle.evidence.
+      evidence_digests binds each static scope/manifest/unit inventory; the
+      dynamic receipt also binds the exact durable prior PID/start/boot list.
+    * now_ns() refreshes the monotonic clock under the nonblocking locks.
+    * journals_terminal(plan) derives real journal terminality or raises
+      Pending; invalid identity/context must raise a hard failure.
+    * verify_installation(plan) checks actual final and retained artifacts and
+      effective dedicated recovery capabilities, while admission is still shut.
+    * activate_recovery/close_recovery(plan) are bounded idempotent operations
+      only on dedicated WhatsApp units, performed outside publication/tenant
+      locks; the provider owns their durable process/FD service lease.
+    * verify_runtime_retirement(plan) requires the protected runtime journal
+      selected by runtime_retirement.operation_id, bound to this plan digest,
+      verified with no pending intent. It runs before payload removal/replay
+      and before archiving the retired owner; no helper is removed first.
+    * verify_invokers_absent(plan, after_removal=False, resuming_removal=False)
+      verifies an exact, separately authenticated
+      empty-reference attestation before managed files vanish. After removal,
+      after_removal=True verifies the exact resulting references before its
+      checkpoint and before the retired owner is archived. resuming_removal
+      is used only after validating the existing engine journal against the
+      exact action: the provider still checks invariant references, delegates
+      changed managed references to engine replay, then must verify the exact
+      after-state. These modes are mutually exclusive, never accept-either.
+
+    Evidence stages: legacy inventory/legacy_work/legacy_all/installed; fresh
+    inventory/installed; upgrade inventory/previous/installed; remove
+    inventory/removal. Upgrade closes admission on the old epoch, drains its
+    exact process census and journals, then installs the new epoch's sources.
+    Pre-cut legacy_work may
+    exclude the independently attested global dispatcher parent, but legacy_all
+    must include every old parent/child and recorded survivor. The installed
+    scope follows that old generation, not the newly armed recovery scheduler.
+    New boot requires a new census. No loaded generation is inferred from argv.
+    """
+    if filesystem is None:
+        from host.lifecycle import filesystem
+    if evidence is None:
+        from host.lifecycle import evidence
+    plan_digest = validate_plan(plan, payloads, filesystem)
+    original = _load(root, plan, plan_digest)
+    # Recovery consumes the already durable intent before any fresh receipt can
+    # change its payload; all re-entry locks remain owner-scoped and nonblocking.
+    next_sequence = 1 if original is None else original['sequence'] + 1
+    pending_control = _read(root, _engine_journal(plan, 'journal-' + str(next_sequence))) is not None
+    if original is not None or pending_control:
+        with provider.critical_section(plan):
+            require(_load(root, plan, plan_digest) == original, 'Another invocation advanced this handoff')
+            if _resume_control(root, plan, original, plan_digest, filesystem):
+                recovered = _load(root, plan, plan_digest)
+                if recovered['phase'] == 'verified':
+                    require(_owner_value(root, plan) == _expected_owner(plan, 'verified'), 'Final owner changed')
+                    provider.verify_installation(plan)
+                return {'phase': recovered['phase'], 'pending': False, 'journal': plan['journal']['path']}
+            resumed = _resume_publication(root, plan, original, plan_digest, payloads, provider, filesystem, fault)
+            if resumed is not None:
+                return resumed
+    envelope = checked = None
+    stage = None
+    if original is None:
+        stage = 'inventory'
+        envelope, checked = _observe(plan, plan_digest, stage, [], provider, evidence, initial=True)
+    elif plan['mode'] == 'upgrade' and original['phase'] in ('retiring', 'previous_drained'):
+        stage = 'previous'
+        envelope, checked = _observe(plan, plan_digest, stage, original['processes'], provider, evidence)
+    elif original['phase'] in ('ingress_closed', 'legacy_reconciled', 'dispatcher_cut', 'legacy_drained',
+                               'installed', 'recovery_armed', 'invokers_closed', 'drained', 'recovery_closed'):
+        stage = {'ingress_closed': 'legacy_work', 'legacy_reconciled': 'legacy_work',
+                 'dispatcher_cut': 'legacy_all', 'legacy_drained': 'legacy_all',
+                 'installed': 'installed', 'recovery_armed': 'installed',
+                 'invokers_closed': 'removal', 'drained': 'removal', 'recovery_closed': 'removal'}[original['phase']]
+        envelope, checked = _observe(plan, plan_digest, stage, original['processes'], provider, evidence)
+    with provider.critical_section(plan):
+        require(_load(root, plan, plan_digest) == original, 'Another invocation advanced this handoff; reobserve')
+        if envelope is not None:
+            # Refresh the consumption clock after lock acquisition; no stale zero.
+            envelope['now_ns'] = provider.now_ns()
+            _still_fresh(envelope, evidence, provider)
+        if original is None:
+            require(_owner_value(root, plan) == plan['previous_owner'], 'Existing owner differs from the approved inventory')
+            if plan['mode'] == 'fresh':
+                require(_quiescent(checked, evidence), 'Fresh installation has existing scoped work')
+                provider.journals_terminal(plan)
+            if plan['mode'] == 'legacy':
+                source = root.read_bytes(RECEIVER)
+                expected = plan['actions']['guard_ingress']['before']['files'][RECEIVER]['sha256']
+                require(guarded_legacy_source(source, expected) == payloads['guard_ingress'][RECEIVER], 'Guard payload is not derived from approved legacy source')
+                for destination in LEGACY_DESTINATIONS:
+                    require(guarded_legacy_destination(destination, root.read_bytes(destination)) == payloads['guard_ingress'][destination],
+                            'Destination guard is not derived from the exact observed legacy source')
+            _still_fresh(envelope, evidence, provider)
+            journal = {'format': FORMAT, 'plan_digest': plan_digest, 'phase': 'prepared', 'intent': None,
+                       'sequence': 0, 'processes': checked['processes'], 'evidence': {stage: checked['receipt_digest']}}
+            _save(root, plan, journal, filesystem, fault)
+            return {'phase': journal['phase'], 'pending': False, 'journal': plan['journal']['path']}
+        journal = json.loads(encoded(original))
+        # Finish an engine transaction that published this control file just
+        # before the prior process died. Never abandon its exact operation.
+        spec = {key: value for key, value in plan['journal'].items() if key != 'path'}
+        _control(root, plan, plan['journal']['path'], journal, spec,
+                 'journal-' + str(journal['sequence']), filesystem)
+        phase = journal['phase']
+        if phase == 'verified':
+            require(_owner_value(root, plan) == _expected_owner(plan, phase), 'Final owner changed')
+            provider.verify_installation(plan)
+            return {'phase': phase, 'pending': False, 'journal': plan['journal']['path']}
+        target = PHASES[plan['mode']][PHASES[plan['mode']].index(phase) + 1]
+        current_owner = _owner_value(root, plan)
+        owner_action = target in ('transitioning', 'retiring', 'owner_dedicated', 'retired', 'owner_removed')
+        desired_owner = _desired_owner(plan, target) if owner_action else None
+        require(current_owner == _expected_owner(plan, phase) or owner_action and journal['intent'] == target and current_owner == desired_owner,
+                'Owner barrier changed; do not automatically roll back')
+        if checked is not None:
+            journal['processes'] = _merged(journal['processes'], checked['processes'])
+            journal['evidence'][stage] = checked['receipt_digest']
+            try:
+                require(_quiescent(checked, evidence), 'Scoped processes or service jobs still exist')
+                provider.journals_terminal(plan)
+            except (Pending, HandoffError) as error:
+                _still_fresh(envelope, evidence, provider)
+                _save(root, plan, journal, filesystem, fault)
+                return {'phase': phase, 'pending': True, 'reason': str(error), 'journal': plan['journal']['path']}
+        if target == 'transitioning' and plan['previous_owner'] is not None:
+            # A prior dedicated recovery cannot run after changing its epoch.
+            # Close admission only after its existing work is reconciled.
+            provider.journals_terminal(plan)
+        if target in ('removed', 'owner_removed'):
+            provider.verify_runtime_retirement(plan)
+            provider.verify_invokers_absent(plan, **({'after_removal': True} if target == 'owner_removed' else {}))
+        if target in ('installed', 'owner_dedicated', 'retired', 'removed'):
+            provider.journals_terminal(plan)
+        if target == 'owner_dedicated':
+            provider.verify_installation(plan)
+        _still_fresh(envelope, evidence, provider)
+        if journal['intent'] is None:
+            journal['intent'] = target
+        # Refresh evidence in the durable intent also when retrying a service
+        # action; an in-memory receipt is never compared against an older save.
+        _save(root, plan, journal, filesystem, fault)
+        _event(fault, 'before-' + target, journal)
+        _still_fresh(envelope, evidence, provider)
+        if target == 'owner_removed':
+            _remove_owner(root, plan, filesystem)
+        elif owner_action:
+            _control(root, plan, OWNER, desired_owner, plan['owner_metadata'], 'owner-' + target, filesystem)
+        action_name = {'ingress_closed': 'guard_ingress', 'dispatcher_cut': 'cut_dispatcher', 'installed': 'install',
+                       'invokers_closed': 'close_invokers', 'removed': 'remove'}.get(target)
+        if action_name:
+            action = plan['actions'][action_name]
+            if target == 'removed': provider.verify_runtime_retirement(plan)
+            _apply(root, plan, 'action-' + action_name, action['before'], action['after'], payloads[action_name],
+                   action['allowed_paths'], filesystem)
+        if target == 'removed':
+            provider.verify_invokers_absent(plan, after_removal=True)
+        if target not in ('recovery_armed', 'recovery_closed', 'verified'):
+            _event(fault, 'after-' + target, journal)
+            journal['phase'], journal['intent'] = target, None
+            _save(root, plan, journal, filesystem, fault)
+            return {'phase': target, 'pending': False, 'journal': plan['journal']['path']}
+    # Never retain publication or tenant locks across service manager actions.
+    if target == 'recovery_armed':
+        provider.activate_recovery(plan)
+    elif target == 'recovery_closed':
+        provider.close_recovery(plan)
+    else:
+        provider.verify_installation(plan)
+    with provider.critical_section(plan):
+        current = _load(root, plan, plan_digest)
+        require(current == journal and _owner_value(root, plan) == _expected_owner(plan, phase), 'Handoff changed during bounded service action')
+        _event(fault, 'after-' + target, journal)
+        journal['phase'], journal['intent'] = target, None
+        _save(root, plan, journal, filesystem, fault)
+    return {'phase': target, 'pending': False, 'journal': plan['journal']['path']}

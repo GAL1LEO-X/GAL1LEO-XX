@@ -1,0 +1,3 @@
+# New native GOWS only; retain the qualified 0.8.4 runtime and all WAHA files.
+FROM sha256:a83a6b1784397c2b03e807372953bb9498fcadaedf5405110cf2af2c97d0089c
+COPY --chown=0:0 runtime/gows /app/gows

@@ -1,0 +1,5 @@
+# Both images must already be cached and inspected by qualify_oci.py.
+# COPY-only overlay: no package download, RUN, environment or entrypoint change.
+FROM sha256:f0a3c175db2a5d04b48a5dd1989899bb2a535950371f96b74e145683b770f26c
+COPY --chown=0:0 dist/ /app/dist/
+COPY --chown=0:0 gows /app/gows

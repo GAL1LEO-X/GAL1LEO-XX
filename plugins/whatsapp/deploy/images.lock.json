@@ -1,0 +1,9 @@
+{
+  "verified_at": "2026-10-11",
+  "registry": "https://hub.docker.com/v2/repositories/devlikeapro/waha/tags/gows-2026.9.2",
+  "waha_version": "2026.9.2",
+  "waha_tag": "docker.io/devlikeapro/waha:gows-2026.9.2",
+  "waha_image": "docker.io/devlikeapro/waha@sha256:1ae3c6a994ee97e5039bf41103193d7bf9175f1a31db73ba89bdeed6277901bc",
+  "engine": "GOWS",
+  "runtime_tested": false
+}

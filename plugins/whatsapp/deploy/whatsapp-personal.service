@@ -1,0 +1,42 @@
+[Unit]
+Description=WhatsApp Personal MCP bridge for ChatGPT
+After=network-online.target
+Wants=network-online.target
+StartLimitIntervalSec=300
+StartLimitBurst=5
+
+[Service]
+Type=simple
+User=whatsappbridge
+Group=whatsappbridge
+WorkingDirectory=/srv/openai-codex/projects/whatsapp-personal
+ExecStart=/srv/openai-codex/projects/whatsapp-personal/.venv/bin/python -m sally_whatsapp.cli --config /etc/whatsapp-personal/config.toml serve
+Restart=on-failure
+RestartSec=10
+TimeoutStopSec=30
+UMask=0077
+StateDirectory=whatsapp-personal
+StateDirectoryMode=0700
+NoNewPrivileges=yes
+PrivateTmp=yes
+PrivateDevices=yes
+ProtectSystem=strict
+ProtectHome=yes
+ProtectKernelTunables=yes
+ProtectKernelModules=yes
+ProtectControlGroups=yes
+RestrictSUIDSGID=yes
+RestrictRealtime=yes
+LockPersonality=yes
+CapabilityBoundingSet=
+RestrictAddressFamilies=AF_UNIX AF_INET AF_INET6
+MemoryMax=1G
+CPUQuota=200%
+CPUWeight=800
+IOWeight=800
+TasksMax=128
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target
+

@@ -1,0 +1,44 @@
+{
+  "schema": 1,
+  "id": "whatsapp",
+  "version_file": "pyproject.toml",
+  "requirements": "requirements-test.lock",
+  "project": "pyproject.toml",
+  "editable": true,
+  "browser": true,
+  "venvs": {
+    "3.13": ".venvs/whatsapp",
+    "3.14": ".venvs/whatsapp-3.14"
+  },
+  "checks": {
+    "quick": [
+      [
+        "{python}",
+        "{root}/tools/check_repository.py"
+      ],
+      [
+        "{python}",
+        "-m",
+        "pytest",
+        "tools/tests/test_cloud_environment.py",
+        "plugins/whatsapp/tests/test_release_recovery.py::test_timeout_allows_actual_backup_finally_to_restore_synthetic_components",
+        "-q",
+        "--tb=short"
+      ]
+    ],
+    "full": [
+      [
+        "bash",
+        "{root}/tools/cloud/check.sh",
+        "--python",
+        "{python}",
+        "--results-dir",
+        "{results}"
+      ]
+    ]
+  },
+  "build": [
+    "{python}",
+    "{root}/tools/build_plugin.py"
+  ]
+}

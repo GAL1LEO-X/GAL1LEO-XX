@@ -1,0 +1,73 @@
+{
+  "format": "gal1leo-anonymized-validation-history-v1",
+  "evidence_status": "reported_historical_not_reexecuted_by_import",
+  "provenance": "Curated from project validation and release notes; translated and anonymized for the public import. Original operational logs are not distributed.",
+  "counts_are_not_additive": true,
+  "checkpoints": [
+    {
+      "version": "0.1.8",
+      "backend_passed_per_python": 200,
+      "opt_in_kafka_skipped_per_python": 1,
+      "python": [
+        "3.13",
+        "3.14"
+      ]
+    },
+    {
+      "version": "0.1.9",
+      "backend_passed_per_python": 219,
+      "opt_in_kafka_skipped_per_python": 1,
+      "python": [
+        "3.13",
+        "3.14"
+      ]
+    },
+    {
+      "version": "0.1.10",
+      "backend_passed_per_python": 227,
+      "opt_in_kafka_skipped_per_python": 1,
+      "python": [
+        "3.13",
+        "3.14"
+      ]
+    },
+    {
+      "version": "0.3.0",
+      "backend_passed_per_python": 405,
+      "opt_in_kafka_skipped_per_python": 1,
+      "python": [
+        "3.13",
+        "3.14"
+      ]
+    },
+    {
+      "version": "0.3.2",
+      "backend_passed_per_python": 567,
+      "opt_in_kafka_skipped_per_python": 0,
+      "python": [
+        "3.13",
+        "3.14"
+      ]
+    },
+    {
+      "version": "0.3.3",
+      "reported_date": "2026-10-28",
+      "backend_passed_per_python": 657,
+      "opt_in_kafka_skipped_per_python": 0,
+      "python": [
+        "3.13",
+        "3.14"
+      ]
+    },
+    {
+      "version": "0.3.4",
+      "reported_date": "2026-10-29",
+      "backend_passed_per_python": 726,
+      "opt_in_kafka_skipped_per_python": 0,
+      "python": [
+        "3.13",
+        "3.14"
+      ]
+    }
+  ]
+}

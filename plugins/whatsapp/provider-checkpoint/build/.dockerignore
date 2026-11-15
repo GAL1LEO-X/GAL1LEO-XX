@@ -1,0 +1,11 @@
+*
+!Dockerfile
+!gows-linux-amd64
+!waha/
+!waha/package.json
+!waha/yarn.lock
+!waha/.yarnrc.yml
+!waha/LICENSE
+!waha/entrypoint.sh
+!waha/dist/
+!waha/dist/**

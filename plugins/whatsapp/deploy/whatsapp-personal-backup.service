@@ -1,0 +1,12 @@
+[Unit]
+Description=Local consistent backup of WhatsApp Personal
+After=whatsapp-personal.service
+
+[Service]
+Type=oneshot
+UMask=0077
+ExecStart=/usr/bin/flock -n /run/lock/whatsapp-personal-backup.lock /srv/openai-codex/projects/whatsapp-personal/.venv/bin/python /srv/openai-codex/projects/whatsapp-personal/scripts/backup_runtime.py
+TimeoutStartSec=15min
+Nice=10
+IOSchedulingClass=idle
+

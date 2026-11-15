@@ -1,0 +1,41 @@
+# Render with the deployment script after DNS and certificate availability are verified.
+<VirtualHost *:443>
+    ServerName __DOMAIN__
+    # Portable Apache baseline; optional host QoS requires separate qualification.
+    DocumentRoot /var/www/whatsapp-personal-acme
+    <Directory /var/www/whatsapp-personal-acme>
+        Options -Indexes
+    </Directory>
+    SSLEngine on
+    SSLCertificateFile /etc/letsencrypt/live/__DOMAIN__/fullchain.pem
+    SSLCertificateKeyFile /etc/letsencrypt/live/__DOMAIN__/privkey.pem
+    SSLProtocol -all +TLSv1.2 +TLSv1.3
+    ProxyPreserveHost On
+    ProxyTimeout 60
+    RedirectMatch 302 ^/$ /connect
+    LimitRequestBody 1048576
+    RequestHeader unset X-Forwarded-User
+    RequestHeader unset X-Forwarded-Email
+    <Location "/webhooks/">
+        Require all denied
+    </Location>
+    <LocationMatch "^/(mcp|\.well-known/oauth-protected-resource)$">
+        Require all granted
+    </LocationMatch>
+    ProxyPass /webhooks/ !
+    ProxyPass /mcp http://127.0.0.1:8820/mcp
+    ProxyPassReverse /mcp http://127.0.0.1:8820/mcp
+    ProxyPass /connect http://127.0.0.1:8820/connect
+    ProxyPassReverse /connect http://127.0.0.1:8820/connect
+    ProxyPass /files/ http://127.0.0.1:8820/files/
+    ProxyPassReverse /files/ http://127.0.0.1:8820/files/
+    ProxyPass /assets/ http://127.0.0.1:8820/assets/
+    ProxyPassReverse /assets/ http://127.0.0.1:8820/assets/
+    ProxyPass /.well-known/oauth-protected-resource http://127.0.0.1:8820/.well-known/oauth-protected-resource
+    ProxyPassReverse /.well-known/oauth-protected-resource http://127.0.0.1:8820/.well-known/oauth-protected-resource
+    ErrorLog ${APACHE_LOG_DIR}/whatsapp-personal-error.log
+    # Download URLs are bearer grants. Exclude them from request access logs.
+    SetEnvIf Request_URI "^/(files/|connect/(callback|api/|qr))" whatsapp_private_download
+    CustomLog ${APACHE_LOG_DIR}/whatsapp-personal-access.log combined env=!whatsapp_private_download
+</VirtualHost>
+

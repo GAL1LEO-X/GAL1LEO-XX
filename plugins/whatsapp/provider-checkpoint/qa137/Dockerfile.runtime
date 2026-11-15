@@ -1,0 +1,5 @@
+# Native receipt-diagnostics provider, after GOWS QA136 and WAHA QA131.
+# Caller verifies binary and the complete 2066-file WAHA dist inventory before
+# build, then verifies that the sole new layer writes only /app/gows and dist.
+FROM sha256:d0fb209980f52f79ef4586c97c4d67a910183026fbcb61264e6bd437ffa97a10
+COPY --chown=0:0 runtime/ /app/

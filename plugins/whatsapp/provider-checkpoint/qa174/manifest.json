@@ -1,0 +1,215 @@
+{
+  "schema_version": 1,
+  "status": "qualified_candidate_not_published_or_installed",
+  "baseline_plugins_commit": "69deb9039c291739741600092c75fe0eefc4b292",
+  "base_provider_version": "0.8.6",
+  "provider_lock_changed": false,
+  "dependencies_changed": false,
+  "database_schema_changed": false,
+  "sources": {
+    "waha": {
+      "base_archive_sha256": "12e454b5a1190827ef1ffe6b4acc02e3ace44930cd8562b053fbd81d607c3dca",
+      "archive_root": "waha-corresponding-source",
+      "patch_sha256": "aad252db9bfd5c42b59d538427a4dd6bac056a0860393a93566120c8a10a5bba",
+      "patch_bytes": 22505,
+      "changed_paths": [
+        "checkpoints/offline-ab/qa174-compiled.test.cjs",
+        "checkpoints/offline-ab/qa174.test.cjs",
+        "src/apps/mcp/tools/channels.zod.ts",
+        "src/apps/mcp/tools/chats.zod.ts",
+        "src/apps/mcp/tools/labels.zod.ts",
+        "src/core/engines/gows/groups.gows.ts",
+        "src/core/engines/wpp/session.wpp.core.ts",
+        "src/core/utils/convertors.ts",
+        "src/structures/channels.dto.ts",
+        "src/structures/chats.dto.ts",
+        "src/structures/chatting.dto.ts",
+        "src/structures/labels.dto.ts"
+      ],
+      "local_archive_sha256": "96505e2ecef6b09dc9c2d7e5a4d76fa64ab9fec15e40915faf0bdd445e285f4e",
+      "local_archive_bytes": 5839465,
+      "local_archive_files": 793,
+      "source_inventory_sha256": "94f48a1e8ad04df431f6a64ee3fa154ebf52b12270d5d033da7fb5a21eccab8b"
+    },
+    "gows": {
+      "base_archive_sha256": "40e695467914efe261aac00298b17d4a78b63171401f46cac436465a6f732a2d",
+      "archive_root": "gows-corresponding-source",
+      "patch_sha256": "0b818314b0b119485feabe5062202b1fc2b9619889ad830a59e27da0f17fed8d",
+      "patch_bytes": 5113,
+      "changed_paths": [
+        "src/gows/group_leave_regression_test.go",
+        "src/gows/storage_event_handler.go"
+      ],
+      "local_archive_sha256": "7723a8cf9378a647bf5447c8aff96d0a5bae7c0a4865b9ae91e156279190271b",
+      "local_archive_bytes": 8912224,
+      "local_archive_files": 2344,
+      "source_inventory_sha256": "ffb61e06da87112ffabade052dc5313547555997966646e5a937b546b01bfc11"
+    }
+  },
+  "qualification": {
+    "network_accounts_used": false,
+    "oci": "passed_recovered_QA163_cloud_and_rootless_stores",
+    "native": "passed",
+    "waha_source_tests": {
+      "passed": 27,
+      "red_failures": 15
+    },
+    "waha_compiled_tests": {
+      "passed": 7,
+      "long_lookback_red_failures": 1
+    },
+    "gows_tests": "Parser/handler/SQLite group cache, PN/LID/device/foreign/account isolation, existing own-message/receipt regressions and storage/helpers passed",
+    "native_builds": {
+      "gows_sha256": "01250b1cd8bc6a2d801360337aa0a5b834bc398d4cc8a94ab20a57b373773fe4",
+      "second_gows_sha256": "01250b1cd8bc6a2d801360337aa0a5b834bc398d4cc8a94ab20a57b373773fe4",
+      "identical": true,
+      "gows_bytes": 48390352
+    },
+    "native_environment": {
+      "image_config_digest": "sha256:1a7ac3af3af212f23b6a5c90d68268bfb80824694c16a44dab57c1ca12a73bde",
+      "archive_sha256": "6211754e04aed2bed586c15dca978cd5f4fb94b369c69e9acb6b6c61d01224bb",
+      "harness_image": "sha256:5d2f6e80aabae8bfd64a01f489706f9860f837b3ce3d95d157b91713e0cd9c78",
+      "go": "1.26.4",
+      "gcc": "12.2.0",
+      "libvips": "8.14.1",
+      "usr_content_file_modes_and_symlinks_verified": true,
+      "usr_directory_modes_verified": false
+    },
+    "waha_builds": {
+      "files_a": 2067,
+      "files_b": 2067,
+      "different_files": [],
+      "runtime_code_identical": true,
+      "inventory_a_sha256": "332950c568402d13e97c7ca23faa64288cd569c92c9429b77c6f3c1f8c8a61dc",
+      "inventory_b_sha256": "332950c568402d13e97c7ca23faa64288cd569c92c9429b77c6f3c1f8c8a61dc"
+    },
+    "source_archives_rebuilt_twice_identically": true,
+    "six_route_openapi": {
+      "kind": "actual compiled candidate controller/DTO metadata, constructors not invoked",
+      "sha256": "8ec5dcfe54bf24bc8cf9a8f0a8528e605c4b5c004ebaa3ea37324b5f078b4c0a"
+    },
+    "production_calls": false,
+    "live_provider_sessions": false,
+    "long_lookback": {
+      "admitted_days": [
+        36500,
+        1e+308
+      ],
+      "clamped_to_unix_epoch": true,
+      "count_unchanged": true,
+      "gows_source_and_binary_unchanged": true
+    },
+    "previous_oci_status": "not_executed_local_Docker_socket_EPERM",
+    "preliminary_host_native_builds": {
+      "gows_sha256": "f6e4a50bf7f11819075ea45fedbafb714b1602f551996b80160ccd32f337ca1d",
+      "second_gows_sha256": "f6e4a50bf7f11819075ea45fedbafb714b1602f551996b80160ccd32f337ca1d",
+      "identical": true,
+      "gows_bytes": 48451728
+    },
+    "preliminary_host_native_environment": {
+      "go": "1.26.4",
+      "node": "24.19.0",
+      "gcc": "14.2.0 (host)",
+      "native_libraries": "retained compiler rootfs; no system installation",
+      "compiler_image_equivalence_claimed": false
+    },
+    "runtime_receipt": {
+      "path": "qualified-runtime.json",
+      "sha256": "16f1ac341d42ed68625cdef0990da10a778c27e5a9e2b206402b5f26a5c3c750",
+      "source_commit": "81f98a44a41ccb805bcbb74ca31e60111beb0126",
+      "input_manifest_sha256": "ea962f5df267af0ecb29592ffb1d74d80b7cf1d2796bc7e95e36baff2900c038"
+    },
+    "preliminary_host_native_checks": [
+      {
+        "name": "node-version",
+        "returncode": 0,
+        "seconds": 0.008,
+        "log_sha256": "b7677d3ec37ee1897ba07dc2cfe8292fe421c9ac93396cca5bbece486d1a2a41"
+      },
+      {
+        "name": "go-version",
+        "returncode": 0,
+        "seconds": 0.004,
+        "log_sha256": "7ae85ca579b70c29982baf7def7120e7be497122076f66e3b30a0db90ca7f93a"
+      },
+      {
+        "name": "gcc-version",
+        "returncode": 0,
+        "seconds": 0.002,
+        "log_sha256": "4dc9a4e32fd9e06d42fb307688c59d6d889f0ff90ce034cbefed21b0d451fd81"
+      },
+      {
+        "name": "gows-regressions",
+        "returncode": 0,
+        "seconds": 61.868,
+        "log_sha256": "04a77891674492c973a207daa74e8d6fbbf3fb00997909089c119cefbdfb8503"
+      },
+      {
+        "name": "group-helpers",
+        "returncode": 0,
+        "seconds": 0.569,
+        "log_sha256": "9fac9d273e486f54478d8b5b5fd664f06ea36a4d07a82b6e30b6d042fbb83d48"
+      },
+      {
+        "name": "gows-build-a",
+        "returncode": 0,
+        "seconds": 67.267,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "gows-build-b",
+        "returncode": 0,
+        "seconds": 66.599,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ],
+    "waha_checks": [
+      {
+        "name": "final-a-build",
+        "command": [
+          "node",
+          "node_modules/@nestjs/cli/bin/nest.js",
+          "build"
+        ],
+        "returncode": 0,
+        "seconds": 13.471,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      },
+      {
+        "name": "final-a-source-tests",
+        "command": [
+          "node",
+          "checkpoints/offline-ab/qa174.test.cjs"
+        ],
+        "returncode": 0,
+        "seconds": 0.72,
+        "log_sha256": "fd117ed375d5e9530255fb528eca192e9b4fd0dd349f5ac4b6d36dc9198d6bca"
+      },
+      {
+        "name": "final-a-compiled-tests",
+        "command": [
+          "node",
+          "checkpoints/offline-ab/qa174-compiled.test.cjs"
+        ],
+        "returncode": 0,
+        "seconds": 0.622,
+        "log_sha256": "4a35f92ea46a2f08a715d5f4215f7c400a626a490b8f3c1309e832a70fede51a"
+      },
+      {
+        "name": "final-b-build",
+        "command": [
+          "node",
+          "node_modules/@nestjs/cli/bin/nest.js",
+          "build"
+        ],
+        "returncode": 0,
+        "seconds": 14.008,
+        "log_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+      }
+    ]
+  },
+  "candidate_versions": {
+    "backend": "0.8.13",
+    "provider": "0.8.7"
+  }
+}

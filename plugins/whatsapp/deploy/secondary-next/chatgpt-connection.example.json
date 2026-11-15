@@ -1,0 +1,12 @@
+{
+  "status": "inactive_template_not_a_live_registration",
+  "display_name": "WhatsApp Example user",
+  "endpoint": "https://secondary-next.example.invalid/mcp",
+  "authentication": "OAuth",
+  "issuer": "https://login.example.invalid",
+  "owner_subject": null,
+  "client_id": null,
+  "app_id": null,
+  "scopes": [],
+  "registration": "Inactive planning template. Configure the exact owner subject, clients, connection and permissions separately. Never reuse another instance's registration, credentials, data or session."
+}

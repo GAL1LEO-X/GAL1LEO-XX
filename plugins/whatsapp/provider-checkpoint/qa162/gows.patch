@@ -1,0 +1,528 @@
+diff --git a/src/gows/storage_event_handler.go b/src/gows/storage_event_handler.go
+index 4818312..795d393 100644
+--- a/src/gows/storage_event_handler.go
++++ b/src/gows/storage_event_handler.go
+@@ -322,9 +322,28 @@ func (st *StorageEventHandler) handleReceipt(event *events.Receipt) {
+ 				defer cancel()
+ 				diagnosticContext = ctx
+ 			}
++			if updater, ok := st.storage.Messages.(storage.ReceiptAliasUpdater); ok {
++				if _, _, compatible := storage.ReceiptAliasPair(msg.Info.Chat, event.Chat); compatible {
++					key, keyErr := storage.MessageKeyFromInfo(msg.Info)
++					result := storage.ReceiptInvalid
++					if keyErr == nil && key.ID == id {
++						result = updater.AdvanceReceiptAlias(diagnosticContext, key, event.Chat, event.IsFromMe, status).Safe()
++					}
++					if result == storage.ReceiptApplied || result == storage.ReceiptCurrent {
++						st.log.Infof("receipt.cache.verified_alias result=%s", result)
++					} else {
++						st.log.Warnf("receipt.cache.skipped reason=verified_alias_%s", result)
++					}
++					continue
++				}
++			}
+ 			st.logReceiptChatMismatch(diagnosticContext, msg, event)
+ 			continue
+ 		}
++		if event.IsFromMe {
++			st.log.Debugf("receipt.cache.skipped reason=self_receipt")
++			continue
++		}
+ 		if !msg.Info.IsFromMe {
+ 			st.log.Debugf("receipt.cache.skipped reason=not_outbound")
+ 			continue
+diff --git a/src/gows/storage_receipt_verified_test.go b/src/gows/storage_receipt_verified_test.go
+new file mode 100644
+index 0000000..ea77da0
+--- /dev/null
++++ b/src/gows/storage_receipt_verified_test.go
+@@ -0,0 +1,53 @@
++package gows
++
++import (
++	"database/sql"
++	"path/filepath"
++	"testing"
++
++	"github.com/devlikeapro/gows/storage"
++	"github.com/devlikeapro/gows/storage/sqlstorage"
++	"github.com/stretchr/testify/require"
++	"go.mau.fi/whatsmeow/types"
++	"go.mau.fi/whatsmeow/types/events"
++	waLog "go.mau.fi/whatsmeow/util/log"
++)
++
++func TestReceiptVerifiedAliasAdvancesRealCache(t *testing.T) {
++	path := filepath.Join(t.TempDir(), "instance.db")
++	container, err := sqlstorage.New("sqlite3", path+"?_foreign_keys=on", waLog.Noop)
++	require.NoError(t, err)
++	defer container.Close()
++	messages := container.NewMessageStorage()
++	mapping := container.NewLidmapStorage()
++	pn := types.NewJID("15550001111", types.DefaultUserServer)
++	lid := types.NewJID("123456", types.HiddenUserServer)
++	writer, err := sql.Open("sqlite3", path)
++	require.NoError(t, err)
++	_, err = writer.Exec("INSERT INTO whatsmeow_lid_map(lid,pn) VALUES(?,?)", lid.User, pn.User)
++	require.NoError(t, err)
++	require.NoError(t, writer.Close())
++	status := storage.StatusServerAck
++	original := receiptStored(pn, true, &status)
++	original.Info.ID = "synthetic-outbound"
++	require.NoError(t, messages.UpsertOneMessage(original))
++	log := &receiptLogSpy{}
++	h := &StorageEventHandler{storage: &storage.Storage{Messages: messages, Lidmap: mapping}, log: log}
++	h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: lid}, MessageIDs: []types.MessageID{original.Info.ID}, Type: types.ReceiptTypeRead})
++	got, err := messages.GetMessage(original.Info.ID)
++	require.NoError(t, err)
++	require.Equal(t, storage.StatusRead, *got.Status)
++	require.Equal(t, pn, got.Info.Chat)
++	require.True(t, got.Info.IsFromMe)
++	require.Equal(t, storage.StatusServerAck, *original.Status, "input event stays immutable")
++}
++
++func TestReceiptVerifiedSelfDoesNotAcknowledgeOutgoing(t *testing.T) {
++	chat := types.NewJID("15550001111", types.DefaultUserServer)
++	status := storage.StatusServerAck
++	original := receiptStored(chat, true, &status)
++	h, s, _ := receiptHandler(map[types.MessageID]*storage.StoredMessage{"id": original})
++	h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: chat, IsFromMe: true}, MessageIDs: []types.MessageID{"id"}, Type: types.ReceiptTypeRead})
++	require.Zero(t, s.writes)
++	require.Equal(t, storage.StatusServerAck, *original.Status)
++}
+diff --git a/src/storage/receipt_update.go b/src/storage/receipt_update.go
+new file mode 100644
+index 0000000..f890b77
+--- /dev/null
++++ b/src/storage/receipt_update.go
+@@ -0,0 +1,36 @@
++package storage
++
++import (
++	"context"
++	"go.mau.fi/whatsmeow/types"
++)
++
++// ReceiptAliasUpdater must verify the full cached key and the unique local
++// PN/LID mapping atomically with its status-only write. Observers cannot grant
++// this capability. Implementations must not fetch mappings or retry writes.
++type ReceiptAliasUpdater interface {
++	AdvanceReceiptAlias(context.Context, MessageKey, types.JID, bool, Status) ReceiptUpdateResult
++}
++
++type ReceiptUpdateResult string
++
++const (
++	ReceiptApplied           ReceiptUpdateResult = "applied"
++	ReceiptCurrent           ReceiptUpdateResult = "already_current"
++	ReceiptInvalid           ReceiptUpdateResult = "invalid_identity"
++	ReceiptMapping           ReceiptUpdateResult = "unverified_mapping"
++	ReceiptSourceUnavailable ReceiptUpdateResult = "source_unavailable"
++	ReceiptStoreUnavailable  ReceiptUpdateResult = "store_unavailable"
++	ReceiptStoreBusy         ReceiptUpdateResult = "store_busy"
++	ReceiptStoreError        ReceiptUpdateResult = "store_error"
++)
++
++func (r ReceiptUpdateResult) Safe() ReceiptUpdateResult {
++	switch r {
++	case ReceiptApplied, ReceiptCurrent, ReceiptInvalid, ReceiptMapping,
++		ReceiptSourceUnavailable, ReceiptStoreUnavailable, ReceiptStoreBusy, ReceiptStoreError:
++		return r
++	default:
++		return ReceiptStoreError
++	}
++}
+diff --git a/src/storage/sqlstorage/message.go b/src/storage/sqlstorage/message.go
+index b222a59..1df4ff4 100644
+--- a/src/storage/sqlstorage/message.go
++++ b/src/storage/sqlstorage/message.go
+@@ -16,6 +16,7 @@ import (
+ 
+ type SqlMessageStore struct {
+ 	*EntityRepository[storage.StoredMessage]
++	receiptUpdateGate chan struct{}
+ }
+ 
+ var _ storage.MessageStorage = (*SqlMessageStore)(nil)
+@@ -27,7 +28,8 @@ func (gc *GContainer) NewMessageStorage() *SqlMessageStore {
+ 		messageMapper,
+ 	)
+ 	return &SqlMessageStore{
+-		repo,
++		EntityRepository:  repo,
++		receiptUpdateGate: make(chan struct{}, 1),
+ 	}
+ }
+ 
+diff --git a/src/storage/sqlstorage/receipt_update.go b/src/storage/sqlstorage/receipt_update.go
+new file mode 100644
+index 0000000..7f307da
+--- /dev/null
++++ b/src/storage/sqlstorage/receipt_update.go
+@@ -0,0 +1,126 @@
++package sqlstorage
++
++import (
++	"context"
++	"database/sql"
++	"database/sql/driver"
++	"fmt"
++
++	"github.com/devlikeapro/gows/storage"
++	"go.mau.fi/whatsmeow/types"
++)
++
++var _ storage.ReceiptAliasUpdater = (*SqlMessageStore)(nil)
++
++// AdvanceReceiptAlias retains the cached namespace, content, full key and
++// restrictions. It updates only a freshly loaded status in one SQLite write
++// transaction; mappings cannot change between verification and commit.
++func (s *SqlMessageStore) AdvanceReceiptAlias(ctx context.Context, expected storage.MessageKey, receiptChat types.JID, receiptFromMe bool, status storage.Status) storage.ReceiptUpdateResult {
++	chat, err := types.ParseJID(expected.Chat)
++	pn, lid, compatible := storage.ReceiptAliasPair(chat, receiptChat)
++	if err != nil || chat.ToNonAD().String() != expected.Chat || !compatible ||
++		!expected.FromMe || expected.Participant != "" || expected.ID == "" || receiptFromMe ||
++		status < storage.StatusDeliveryAck || status > storage.StatusPlayed {
++		return storage.ReceiptInvalid
++	}
++	if s == nil || s.EntityRepository == nil || s.db == nil || s.receiptUpdateGate == nil ||
++		s.db.DriverName() != "sqlite3" {
++		return storage.ReceiptStoreUnavailable
++	}
++	ctx, cancel := context.WithTimeout(ctx, storage.ReceiptAliasBudget)
++	defer cancel()
++	if ctx.Err() != nil {
++		return storage.ReceiptStoreBusy
++	}
++	select {
++	case s.receiptUpdateGate <- struct{}{}:
++		defer func() { <-s.receiptUpdateGate }()
++	default:
++		return storage.ReceiptStoreBusy
++	}
++	conn, err := s.db.Connx(ctx)
++	if err != nil {
++		return storage.ReceiptStoreError
++	}
++	defer conn.Close()
++	// The existing DSN can wait ten seconds on a SQLite lock even after
++	// cancellation. Use no busy wait on this exclusively checked-out connection
++	// and restore its exact setting before returning it to the pool. No global
++	// DB/transport configuration change, retry, or detached writing goroutine.
++	var busy int
++	if err = conn.GetContext(ctx, &busy, "PRAGMA busy_timeout"); err != nil {
++		return storage.ReceiptStoreError
++	}
++	if _, err = conn.ExecContext(ctx, "PRAGMA busy_timeout=0"); err != nil {
++		return storage.ReceiptStoreError
++	}
++	defer func() {
++		if _, err := conn.ExecContext(context.Background(), fmt.Sprintf("PRAGMA busy_timeout=%d", busy)); err != nil {
++			// Never return a connection with an un-restored setting to the pool.
++			_ = conn.Raw(func(any) error { return driver.ErrBadConn })
++		}
++	}()
++	tx, err := conn.BeginTxx(ctx, nil)
++	if err != nil {
++		return storage.ReceiptStoreError
++	}
++	defer tx.Rollback()
++	if _, err = tx.ExecContext(ctx, "UPDATE gows_message_mutation_lock SET id=id WHERE id=1"); err != nil {
++		return storage.ReceiptStoreError
++	}
++	var data string
++	if err = tx.GetContext(ctx, &data, "SELECT data FROM gows_messages WHERE id=$1", expected.ID); err != nil {
++		if err == sql.ErrNoRows {
++			return storage.ReceiptSourceUnavailable
++		}
++		return storage.ReceiptStoreError
++	}
++	original := &storage.StoredMessage{}
++	if err = s.mapper.Unmarshal([]byte(data), original); err != nil {
++		return storage.ReceiptStoreError
++	}
++	if storage.RequireMessageKey(original, expected) != nil {
++		return storage.ReceiptInvalid
++	}
++	rows, err := tx.QueryxContext(ctx, receiptAliasQuery, lid.User, pn.User)
++	if err != nil {
++		return storage.ReceiptStoreError
++	}
++	pairs := make([]storage.LidmapEntry, 0, 3)
++	for rows.Next() {
++		var l, p string
++		if err = rows.Scan(&l, &p); err != nil {
++			break
++		}
++		pairs = append(pairs, storage.LidmapEntry{Lid: types.NewJID(l, types.HiddenUserServer), Pn: types.NewJID(p, types.DefaultUserServer)})
++	}
++	rowsErr := rows.Err()
++	rows.Close()
++	if err != nil || rowsErr != nil || ctx.Err() != nil {
++		return storage.ReceiptStoreError
++	}
++	if storage.ClassifyReceiptAliasSnapshot(pn, lid, pairs) != storage.AliasPair {
++		return storage.ReceiptMapping
++	}
++	mutation, err := loadMutation(tx, expected)
++	if err != nil {
++		return storage.ReceiptStoreError
++	}
++	if mutation != nil && (mutation.kind == "revoke" || mutation.kind == "conflict") {
++		return storage.ReceiptSourceUnavailable
++	}
++	if original.Status != nil && *original.Status >= status {
++		return storage.ReceiptCurrent
++	}
++	original.Status = &status
++	if err = s.writeMessage(tx, original); err != nil {
++		return storage.ReceiptStoreError
++	}
++	if ctx.Err() != nil {
++		return storage.ReceiptStoreError
++	}
++	if err = tx.Commit(); err != nil {
++		return storage.ReceiptStoreError
++	}
++	return storage.ReceiptApplied
++}
+diff --git a/src/storage/sqlstorage/receipt_update_test.go b/src/storage/sqlstorage/receipt_update_test.go
+new file mode 100644
+index 0000000..b28906c
+--- /dev/null
++++ b/src/storage/sqlstorage/receipt_update_test.go
+@@ -0,0 +1,234 @@
++package sqlstorage
++
++import (
++	"context"
++	"database/sql"
++	"path/filepath"
++	"sync"
++	"testing"
++	"time"
++
++	"github.com/devlikeapro/gows/storage"
++	"github.com/stretchr/testify/require"
++	"go.mau.fi/whatsmeow/types"
++)
++
++func verifiedReceiptFixture(t *testing.T) (*GContainer, *SqlMessageStore, *storage.StoredMessage, storage.MessageKey) {
++	t.Helper()
++	db, s := mutationTestStore(t, filepath.Join(t.TempDir(), "instance.db"))
++	original := mutationOriginal(aliasPN.String(), "15550009999@s.whatsapp.net", true)
++	require.NoError(t, s.UpsertOneMessage(original))
++	_, err := db.db.Exec("INSERT INTO whatsmeow_lid_map(lid,pn) VALUES(?,?)", aliasLID.User, aliasPN.User)
++	require.NoError(t, err)
++	key, err := storage.MessageKeyFromInfo(original.Info)
++	require.NoError(t, err)
++	return db, s, original, key
++}
++
++func TestReceiptVerifiedMutationIsolationAndMonotonicity(t *testing.T) {
++	one, a, original, key := verifiedReceiptFixture(t)
++	two, b, _, otherKey := verifiedReceiptFixture(t)
++	_, err := two.db.Exec("UPDATE whatsmeow_lid_map SET pn=?", "15550002222")
++	require.NoError(t, err)
++	require.NoError(t, a.UpsertOneMessage(mutationEvent(original, "edited", 400000, false)))
++	before, err := a.GetMessage(key.ID)
++	require.NoError(t, err)
++	require.Equal(t, storage.ReceiptApplied, a.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusRead))
++	require.Equal(t, storage.ReceiptMapping, b.AdvanceReceiptAlias(context.Background(), otherKey, aliasLID, false, storage.StatusPlayed))
++	got := requireCachedText(t, a, "edited")
++	require.Equal(t, before.Info, got.Info)
++	require.Equal(t, storage.StatusRead, *got.Status)
++	require.Equal(t, storage.ReceiptCurrent, a.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusDeliveryAck))
++	require.Equal(t, storage.ReceiptApplied, a.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusPlayed))
++	require.Equal(t, storage.ReceiptCurrent, a.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusRead))
++	untouched, err := b.GetMessage(key.ID)
++	require.NoError(t, err)
++	require.Equal(t, storage.StatusServerAck, *untouched.Status)
++	require.NoError(t, a.UpsertOneMessage(mutationEvent(original, "", 500000, true)))
++	require.Equal(t, storage.ReceiptSourceUnavailable, a.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusRead))
++	require.NoError(t, a.UpsertOneMessage(original))
++	_, err = a.GetMessage(key.ID)
++	require.ErrorIs(t, err, storage.ErrNotFound)
++	var n int
++	require.NoError(t, one.db.Get(&n, "SELECT count(*) FROM gows_message_mutations WHERE kind='revoke'"))
++	require.Equal(t, 1, n)
++}
++
++type receiptWriteMapper struct {
++	Mapper[storage.StoredMessage]
++	beforeWrite func()
++}
++
++func (m receiptWriteMapper) Marshal(value *storage.StoredMessage) ([]byte, error) {
++	m.beforeWrite()
++	return m.Mapper.Marshal(value)
++}
++
++func TestReceiptVerifiedMappingCannotChangeBetweenReadAndWrite(t *testing.T) {
++	path := filepath.Join(t.TempDir(), "atomic.db")
++	db, s := mutationTestStore(t, path)
++	original := mutationOriginal(aliasPN.String(), "15550009999@s.whatsapp.net", true)
++	require.NoError(t, s.UpsertOneMessage(original))
++	_, err := db.db.Exec("INSERT INTO whatsmeow_lid_map(lid,pn) VALUES(?,?)", aliasLID.User, aliasPN.User)
++	require.NoError(t, err)
++	key, err := storage.MessageKeyFromInfo(original.Info)
++	require.NoError(t, err)
++	writer, err := sql.Open("sqlite3", path+"?_busy_timeout=0")
++	require.NoError(t, err)
++	defer writer.Close()
++	called := false
++	s.mapper = receiptWriteMapper{s.mapper, func() {
++		called = true
++		_, writeErr := writer.Exec("UPDATE whatsmeow_lid_map SET pn=?", "15550002222")
++		require.ErrorContains(t, writeErr, "locked", "mapping mutation must not interleave")
++	}}
++	require.Equal(t, storage.ReceiptApplied, s.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusRead))
++	require.True(t, called)
++	_, err = writer.Exec("UPDATE whatsmeow_lid_map SET pn=?", "15550002222")
++	require.NoError(t, err)
++	require.Equal(t, storage.ReceiptMapping, s.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusPlayed))
++	got, err := s.GetMessage(key.ID)
++	require.NoError(t, err)
++	require.Equal(t, storage.StatusRead, *got.Status)
++}
++
++func TestReceiptVerifiedNegativeIdentityAndMappings(t *testing.T) {
++	for _, name := range []string{"missing", "other-pn", "other-lid", "duplicate", "conflict", "limit", "sql-error", "wrong-chat", "wrong-id", "incoming", "self", "participant", "invalid-status", "group", "broadcast", "newsletter", "psa", "bot", "integrator", "key-replaced"} {
++		t.Run(name, func(t *testing.T) {
++			db, s, original, key := verifiedReceiptFixture(t)
++			chat, fromMe, status := aliasLID, false, storage.StatusRead
++			expected := storage.ReceiptInvalid
++			switch name {
++			case "missing":
++				_, err := db.db.Exec("DELETE FROM whatsmeow_lid_map")
++				require.NoError(t, err)
++				expected = storage.ReceiptMapping
++			case "other-pn":
++				_, err := db.db.Exec("UPDATE whatsmeow_lid_map SET pn='15550002222'")
++				require.NoError(t, err)
++				expected = storage.ReceiptMapping
++			case "other-lid":
++				_, err := db.db.Exec("UPDATE whatsmeow_lid_map SET lid='654321'")
++				require.NoError(t, err)
++				expected = storage.ReceiptMapping
++			case "duplicate", "conflict", "limit":
++				// Deliberately corrupt synthetic mapping schema to test fail-closed reads.
++				_, err := db.db.Exec("DROP TABLE whatsmeow_lid_map; CREATE TABLE whatsmeow_lid_map(lid TEXT,pn TEXT)")
++				require.NoError(t, err)
++				pairs := [][2]string{{aliasLID.User, aliasPN.User}, {aliasLID.User, aliasPN.User}}
++				if name != "duplicate" {
++					pairs[1][1] = "15550002222"
++				}
++				if name == "limit" {
++					pairs = append(pairs, [2]string{aliasLID.User, "15550003333"})
++				}
++				for _, pair := range pairs {
++					_, err = db.db.Exec("INSERT INTO whatsmeow_lid_map VALUES(?,?)", pair[0], pair[1])
++					require.NoError(t, err)
++				}
++				expected = storage.ReceiptMapping
++			case "sql-error":
++				_, err := db.db.Exec("DROP TABLE whatsmeow_lid_map")
++				require.NoError(t, err)
++				expected = storage.ReceiptStoreError
++			case "wrong-chat":
++				key.Chat = "15550002222@s.whatsapp.net"
++			case "wrong-id":
++				key.ID = "different-id"
++				expected = storage.ReceiptSourceUnavailable
++			case "incoming":
++				key.FromMe = false
++			case "self":
++				fromMe = true
++			case "participant":
++				key.Participant = "15550002222@s.whatsapp.net"
++			case "invalid-status":
++				status = storage.Status(99)
++			case "group":
++				chat.Server = types.GroupServer
++			case "broadcast":
++				chat.Server = types.BroadcastServer
++			case "newsletter":
++				chat.Server = types.NewsletterServer
++			case "psa":
++				chat = types.PSAJID
++			case "bot":
++				chat = types.NewJID("13135550002", types.DefaultUserServer)
++			case "integrator":
++				chat.Integrator = 2
++			case "key-replaced":
++				require.NoError(t, s.DeleteMessage(key.ID))
++				replacement := mutationOriginal("15550002222@s.whatsapp.net", "15550009999@s.whatsapp.net", true)
++				require.NoError(t, s.UpsertOneMessage(replacement))
++			}
++			before, err := s.GetMessage(original.Info.ID)
++			require.NoError(t, err)
++			require.Equal(t, expected, s.AdvanceReceiptAlias(context.Background(), key, chat, fromMe, status))
++			after, err := s.GetMessage(original.Info.ID)
++			require.NoError(t, err)
++			require.Equal(t, before, after, "rejected receipt must change nothing")
++		})
++	}
++}
++
++func TestReceiptVerifiedBudgetGateAndBusySettingRestored(t *testing.T) {
++	db, s, _, key := verifiedReceiptFixture(t)
++	db.db.SetMaxOpenConns(2)
++	ctx, cancel := context.WithCancel(context.Background())
++	cancel()
++	require.Equal(t, storage.ReceiptStoreBusy, s.AdvanceReceiptAlias(ctx, key, aliasLID, false, storage.StatusRead))
++	s.receiptUpdateGate <- struct{}{}
++	require.Equal(t, storage.ReceiptStoreBusy, s.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusRead))
++	<-s.receiptUpdateGate
++	tx, err := db.db.Beginx()
++	require.NoError(t, err)
++	_, err = tx.Exec("UPDATE gows_message_mutation_lock SET id=id WHERE id=1")
++	require.NoError(t, err)
++	started := time.Now()
++	require.Equal(t, storage.ReceiptStoreError, s.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusRead))
++	require.Less(t, time.Since(started), 300*time.Millisecond, "must not inherit the DSN's 10 second lock wait")
++	require.NoError(t, tx.Rollback())
++	db.db.SetMaxOpenConns(1)
++	var busy int
++	require.NoError(t, db.db.Get(&busy, "PRAGMA busy_timeout"))
++	require.Equal(t, 10000, busy)
++	require.Equal(t, storage.ReceiptApplied, s.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusRead))
++	require.NoError(t, db.db.Get(&busy, "PRAGMA busy_timeout"))
++	require.Equal(t, 10000, busy)
++}
++
++func TestReceiptVerifiedConcurrentRevocationAndEdit(t *testing.T) {
++	for _, revoke := range []bool{false, true} {
++		t.Run(map[bool]string{false: "edit", true: "revoke"}[revoke], func(t *testing.T) {
++			_, s, original, key := verifiedReceiptFixture(t)
++			var wg sync.WaitGroup
++			wg.Add(2)
++			start := make(chan struct{})
++			var update storage.ReceiptUpdateResult
++			var mutationErr error
++			go func() {
++				defer wg.Done()
++				<-start
++				update = s.AdvanceReceiptAlias(context.Background(), key, aliasLID, false, storage.StatusRead)
++			}()
++			go func() {
++				defer wg.Done()
++				<-start
++				mutationErr = s.UpsertOneMessage(mutationEvent(original, "edited", 400000, revoke))
++			}()
++			close(start)
++			wg.Wait()
++			require.NoError(t, mutationErr)
++			require.Contains(t, []storage.ReceiptUpdateResult{storage.ReceiptApplied, storage.ReceiptStoreError, storage.ReceiptSourceUnavailable}, update)
++			if revoke {
++				_, err := s.GetMessage(key.ID)
++				require.ErrorIs(t, err, storage.ErrNotFound)
++			} else {
++				got := requireCachedText(t, s, "edited")
++				if update == storage.ReceiptApplied {
++					require.Equal(t, storage.StatusRead, *got.Status)
++				}
++			}
++		})
++	}
++}

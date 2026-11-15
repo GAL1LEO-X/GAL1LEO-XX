@@ -1,0 +1,21 @@
+{
+  "status": "template_not_a_live_registration",
+  "display_name": "WhatsApp",
+  "endpoint": "https://whatsapp.example.com/mcp",
+  "authentication": "OAuth",
+  "issuer": "https://login.example.com",
+  "client_id": "REPLACE_WITH_THIS_USERS_PUBLIC_CLIENT_ID",
+  "redirect_uri": "https://chatgpt.com/connector_platform_oauth_redirect",
+  "token_endpoint_auth_method": "none",
+  "pkce": "S256",
+  "scopes": [
+    "openid",
+    "profile",
+    "email",
+    "offline_access",
+    "whatsapp:read",
+    "whatsapp:events",
+    "whatsapp:send"
+  ],
+  "registration": "Register and authorize the connection in the target ChatGPT account. Supply its verified app ID to tools/build_plugin.py. Each user uses their own registration."
+}

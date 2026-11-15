@@ -1,0 +1,85 @@
+#!/usr/bin/python3
+"""Owned egress classes: essential services, BOX, other traffic."""
+import json
+from pathlib import Path
+import pwd
+import subprocess
+import sys
+
+def run(*args, input=None, check=True):
+    p = subprocess.run(args, input=input, text=True, capture_output=True)
+    if check and p.returncode:
+        raise RuntimeError(p.stderr.strip())
+    return p
+
+def main():
+    cfg = json.loads(Path('/etc/box-network-priority.json').read_text())
+    dev = cfg['interface']
+    if not dev or any(c not in 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789_.:-' for c in dev):
+        raise ValueError('Invalid interface')
+    uid = pwd.getpwnam(cfg['proxy_user']).pw_uid
+    essential_uids = []
+    for account in ('_apt', 'bind', 'systemd-timesync'):
+        try:
+            essential_uids.append(str(pwd.getpwnam(account).pw_uid))
+        except KeyError:
+            pass
+    core_uids = '{ ' + ', '.join(essential_uids) + ' }'
+    qs = json.loads(run('tc', '-s', '-j', 'qdisc', 'show', 'dev', dev).stdout)
+    root = next(q for q in qs if q.get('root'))
+    ours = root['kind'] == 'ets' and root['handle'] == 'b040:'
+    exists = run('nft', 'list', 'table', 'inet', 'box_priority', check=False).returncode == 0
+    mode = sys.argv[1] if len(sys.argv) > 1 else 'status'
+    if mode == 'status':
+        print(json.dumps({'interface':dev, 'queue_owned':ours, 'qdiscs':qs})); return
+    if not ours and root['kind'] != 'mq':
+        raise RuntimeError('Unknown qdisc')
+    if mode == 'remove':
+        if ours: run('tc','qdisc','replace','dev',dev,'root','mq')
+        if exists: run('nft','delete','table','inet','box_priority')
+        return
+    nft = ('delete table inet box_priority\n' if exists else '') + f'''table inet box_priority {{
+ comment "Essential services first; BOX second; other traffic third"
+ counter essential {{ }}
+ counter proxy_ipv4 {{ }}
+ counter proxy_ipv6 {{ }}
+ counter https_ipv4 {{ }}
+ counter https_ipv6 {{ }}
+ chain output {{
+  type route hook output priority -140; policy accept;
+  oifname "{dev}" meta skuid {uid} meta nfproto ipv4 counter name proxy_ipv4 ip dscp set af41
+  oifname "{dev}" meta skuid {uid} meta nfproto ipv6 counter name proxy_ipv6 ip6 dscp set af41
+  oifname "{dev}" tcp sport 443 meta nfproto ipv4 ip dscp af41 counter name https_ipv4
+  oifname "{dev}" tcp sport 443 meta nfproto ipv6 ip6 dscp af41 counter name https_ipv6
+  oifname "{dev}" tcp sport {{22,53,10000,20000}} meta nfproto ipv4 counter name essential ip dscp set cs6
+  oifname "{dev}" tcp sport {{22,53,10000,20000}} meta nfproto ipv6 counter name essential ip6 dscp set cs6
+  oifname "{dev}" udp sport {{53,123}} meta nfproto ipv4 counter name essential ip dscp set cs6
+  oifname "{dev}" udp sport {{53,123}} meta nfproto ipv6 counter name essential ip6 dscp set cs6
+  oifname "{dev}" meta skuid {core_uids} meta nfproto ipv4 counter name essential ip dscp set cs6
+  oifname "{dev}" meta skuid {core_uids} meta nfproto ipv6 counter name essential ip6 dscp set cs6
+ }}
+}}
+'''
+    run('nft','--check','-f','-',input=nft)
+    if mode == 'check': print('Priority configuration valid'); return
+    if mode != 'apply': raise ValueError('Use apply, check, status, remove')
+    # Changing the number of bands requires replacing the owned queue once.
+    rebuild = not ours or root.get('options',{}).get('nbands',root.get('options',{}).get('bands')) != 3
+    if rebuild:
+        run('tc','qdisc','replace','dev',dev,'root','mq')
+        run('tc','qdisc','replace','dev',dev,'root','handle','b040:','ets','bands','3','strict','1',
+            'quanta','12000','1500','priomap',*(['2']*16))
+    for i in (1,2,3):
+        exists = not rebuild and any(q.get('kind') == 'fq_codel' and q.get('handle') == f'b04{i}:'
+                                     and q.get('parent') == f'b040:{i}' for q in qs)
+        if not exists:
+            run('tc','qdisc','replace','dev',dev,'parent',f'b040:{i}','handle',f'b04{i}:',
+                'fq_codel','limit','10240','flows','1024','target','5ms','interval','100ms','ecn')
+    for offset, proto in enumerate(('ip','ipv6')):
+        for pref, tos, cls in ((10,'0xc0/0xfc','1'),(20,'0x88/0xfc','2')):
+            run('tc','filter','replace','dev',dev,'parent','b040:','protocol',proto,'pref',str(pref+offset),'handle','1',
+                'flower','skip_hw','ip_tos',tos,'classid','b040:'+cls)
+    run('nft','-f','-',input=nft)
+    print(json.dumps({'applied':True,'classes':['essential','BOX','other'],'BOX_to_other':'8:1'}))
+
+if __name__ == '__main__': main()

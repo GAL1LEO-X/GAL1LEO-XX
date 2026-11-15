@@ -1,0 +1,49 @@
+name: Public plugin checks
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  plugins:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.13', '3.14']
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+          cache: npm
+      - name: Prepare isolated development dependencies
+        run: |
+          python -m pip install -r plugins/tesla/requirements-test.lock -r plugins/whatsapp/requirements-test.lock
+          python -m pip install --no-deps -e plugins/tesla -e plugins/whatsapp
+          npm ci --ignore-scripts
+          npx playwright install --with-deps chromium
+      - name: Check public source and package metadata
+        run: python tools/check_public.py
+      - name: Validate development scripts
+        run: |
+          find tools/cloud -type f -name '*.sh' -print0 | sort -z | xargs -0 -r -n1 bash -n
+      - name: Tesla synthetic tests and browser forms
+        run: python -m pytest plugins/tesla/tests -q --tb=short
+      - name: WhatsApp synthetic tests
+        run: python -m pytest plugins/whatsapp/tests -q --tb=short
+      - name: Shared tooling tests
+        run: python -m pytest tools/tests -q --tb=short
+      - name: WhatsApp desktop and mobile browser tests
+        env:
+          PLUGINS_TEST_PYTHON: python
+        run: npm run test:browser
+      - name: Build public source distributions
+        run: |
+          python tools/build_source.py tesla --output outputs/tesla-source.zip
+          python tools/build_source.py whatsapp --output outputs/whatsapp-source.zip

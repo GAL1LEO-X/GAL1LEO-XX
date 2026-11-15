@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "provider_version": "0.8.3",
+  "status": "development_only",
+  "applies_after": "qa125",
+  "sources": {
+    "waha": {
+      "base_tree": "1997a266184e14abad73dbaa593de929b4df27c2",
+      "candidate_tree": "e1d1348848a47d9da02e77991cbf1b40adab5c32",
+      "patch_sha256": "17f438a8e7b7341db1a3fbf4eb596595742d0c78515334924765edd704c0fd02",
+      "patch_bytes": 14399
+    },
+    "gows": {
+      "changed": false,
+      "tree": "7893e93b3ede394e2e639f33a4c9a793cd4619ea"
+    }
+  },
+  "qualification": {
+    "waha_source_tests": true,
+    "waha_typescript_no_emit": true,
+    "runtime_image_built": false,
+    "runtime_image_qualified": false,
+    "live_accounts_tested": false,
+    "deployed": false
+  },
+  "contract": {
+    "receiver": "gal1leo.webhook-rejection.v1",
+    "terminal_status": 400,
+    "unknown_responses_retried": true
+  },
+  "commands": [
+    "node --test checkpoints/offline-ab/qa120.test.cjs checkpoints/offline-ab/qa125.test.cjs checkpoints/offline-ab/qa129.test.cjs",
+    "node node_modules/typescript/bin/tsc --project tsconfig.build.json --noEmit --incremental false"
+  ]
+}

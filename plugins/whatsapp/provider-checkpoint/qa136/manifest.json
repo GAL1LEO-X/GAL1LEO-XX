@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "scope": "receipt cache diagnostic classification only",
+  "base_provider_version": "0.8.3",
+  "base_backend_commit": "c28a9cbef337604e9cf8370c596a9b06febbe1ed",
+  "gows": {
+    "base_tree": "7893e93b3ede394e2e639f33a4c9a793cd4619ea",
+    "candidate_tree": "34534b8195b56e8783c3eaab1063785ea70d76e4",
+    "patch_sha256": "3bdf5aae5a8dc220c8fc8d75309519fcb756d81d50c05095737e0d4b04c7b740",
+    "patch_bytes": 9354
+  },
+  "reapplication_verified": true,
+  "go_version": "1.26.4",
+  "compiler_image": "sha256:1a7ac3af3af212f23b6a5c90d68268bfb80824694c16a44dab57c1ca12a73bde",
+  "qualification": {
+    "focused_pass_entries": 22,
+    "before_pass_entries": 14,
+    "before_fail_entries": 8,
+    "full_suite": "passed",
+    "full_pass_entries": 322,
+    "full_skip_entries": 29,
+    "race": "passed",
+    "race_pass_entries": 269,
+    "race_skip_entries": 29,
+    "race_scope": [
+      "./gows",
+      "./storage/..."
+    ],
+    "skip_reason": "ContextInfo message types not forwardable by existing implementation",
+    "harness_image": "sha256:0536771531650d184c55a84122b315019eb381af1ee30d5a4722949de802aa1b",
+    "compiler_mount": "immutable compiler image usr tree, read-only; scratch harness; network none",
+    "runtime_image_built": false,
+    "live_accounts_tested": false
+  },
+  "dependencies_changed": false,
+  "protobuf_changed": false,
+  "waha_changed": false,
+  "provider_lock_changed": false
+}

@@ -1,0 +1,54 @@
+{
+  "format": "gal1leo-anonymized-validation-history-v1",
+  "evidence_status": "reported_historical_not_reexecuted_by_import",
+  "provenance": "Curated from project validation and release notes; translated and anonymized for the public import. Original operational logs are not distributed.",
+  "counts_are_not_additive": true,
+  "checkpoints": [
+    {
+      "version": "0.5.0",
+      "python": [
+        "3.13"
+      ],
+      "backend_passed": 2385,
+      "backend_subtests": 7,
+      "tooling_passed": 597,
+      "tooling_subtests": 62,
+      "browser_reported": 2
+    },
+    {
+      "version": "0.8.11",
+      "python": [
+        "3.13",
+        "3.14"
+      ],
+      "backend_passed_per_python": 5758,
+      "backend_subtests_per_python": 7,
+      "tooling_passed_per_python": 1442,
+      "tooling_subtests_per_python": 1292,
+      "browser_passed": 48
+    },
+    {
+      "version": "0.8.12",
+      "python": [
+        "3.13",
+        "3.14"
+      ],
+      "backend_passed_per_python": 5808,
+      "backend_subtests_per_python": 7,
+      "tooling_passed_per_python": 1442,
+      "tooling_subtests_per_python": 1300,
+      "tooling_skipped_per_python": 10,
+      "browser_passed": 48
+    },
+    {
+      "version": "0.8.13 / provider 0.8.7 candidate",
+      "scope": "historical provider build qualification",
+      "gows_passed": 503,
+      "gows_skipped": 29,
+      "gows_race_passed": 450,
+      "gows_race_skipped": 29,
+      "targeted_regressions_passed": 51,
+      "compiled_regression_groups": 7
+    }
+  ]
+}

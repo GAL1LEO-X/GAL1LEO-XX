@@ -1,0 +1,59 @@
+--- a/pkg/proxy/proxy.go
++++ b/pkg/proxy/proxy.go
+@@ -358,6 +358,7 @@
+ }
+ 
+ func (p *Proxy) ServeHTTP(w http.ResponseWriter, req *http.Request) {
++	if req.URL.Path == "/gal1leo/capabilities" { gal1leoCapabilities(w, req); return }
+ 	log.Info("Received %s request for %s", req.Method, req.URL.Path)
+ 
+ 	req.Body = http.MaxBytesReader(w, req.Body, maxRequestBodyBytes)
+@@ -386,12 +387,14 @@
+ 				return
+ 			}
+ 			if p.isNotSupported(vin) {
++				if gal1leoCommand(command) { writeJSONError(w, http.StatusPreconditionFailed, ErrCommandNotImplemented); return }
+ 				p.forwardRequest(acct, w, req)
+ 				if acct.Host != p.fetchDomainForSubject(acct.Subject) {
+ 					p.updateDomainForSubject(acct.Subject, acct.Host)
+ 				}
+ 			} else {
+ 				if err := p.handleVehicleCommand(acct, w, req, command, vin); err == ErrCommandUseRESTAPI {
++					if gal1leoCommand(command) { writeJSONError(w, http.StatusPreconditionFailed, ErrCommandNotImplemented); return }
+ 					p.forwardRequest(acct, w, req)
+ 				}
+ 			}
+@@ -495,6 +498,7 @@
+ 
+ 	if err := car.StartSession(ctx); errors.Is(err, protocol.ErrProtocolNotSupported) {
+ 		p.markUnsupportedVIN(vin)
++		if gal1leoCommand(command) { writeJSONError(w, http.StatusPreconditionFailed, err); return err }
+ 		p.forwardRequest(acct, w, req)
+ 		return err
+ 	} else if err != nil {
+--- a/pkg/proxy/command.go
++++ b/pkg/proxy/command.go
+@@ -59,6 +59,11 @@
+ 
+ // ExtractCommandAction use command to define which action should be executed.
+ func ExtractCommandAction(ctx context.Context, command string, params RequestParameters) (func(*vehicle.Vehicle) error, error) {
++	if gal1leoCommand(command) {
++		action, err := gal1leoAction(ctx, command, params)
++		if err != nil { return nil, err }
++		return func(v *vehicle.Vehicle) error { return action(v) }, nil
++	}
+ 	switch command {
+ 	// Media controls
+ 	case "adjust_volume":
+--- a/pkg/proxy/command_test.go
++++ b/pkg/proxy/command_test.go
+@@ -31,7 +31,8 @@
+ 	}{
+ 		{"adjust_volume", params, func(v *vehicle.Vehicle) error { return v.SetVolume(ctx, 0.0) }, nil},
+ 		{"adjust_volume", nil, nil, &protocol.NominalError{Details: fmt.Errorf("missing volume param")}},
+-		{"remote_boombox", params, nil, proxy.ErrCommandNotImplemented},
++		{"remote_boombox", proxy.RequestParameters{"sound": 0.0}, nil, nil},
++		{"remote_boombox", params, nil, fmt.Errorf("invalid parameters for SDK extension")},
+ 		{"invalid_command", params, nil, &inet.HTTPError{Code: http.StatusBadRequest, Message: "{\"response\":null,\"error\":\"invalid_command\",\"error_description\":\"\"}"}},
+ 	}
+ 

@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "provider_version": "0.8.3",
+  "status": "source_fix_pending_runtime_rebuild",
+  "applies_after": "qa129",
+  "sources": {
+    "waha": {
+      "base_tree": "e1d1348848a47d9da02e77991cbf1b40adab5c32",
+      "candidate_tree": "d7de58e17b7de854161e79e07ad9268ce8c8eb96",
+      "patch_sha256": "7206d5e137b1a8134d3aa2d6994c3eb5f1c633937c2c5692e28acd6b5e5c10ef",
+      "patch_bytes": 10380
+    },
+    "gows": {
+      "changed": false,
+      "tree": "7893e93b3ede394e2e639f33a4c9a793cd4619ea"
+    }
+  },
+  "runtime_qualification": {
+    "qa130_image_contains_this_fix": false,
+    "new_image_built": false,
+    "live_accounts_tested": false,
+    "deployed": false
+  },
+  "tls": {
+    "certificate_validation": true,
+    "hostname_validation": true,
+    "private_ca_mechanism": "NODE_EXTRA_CA_CERTS",
+    "http_transport_changed": false
+  }
+}

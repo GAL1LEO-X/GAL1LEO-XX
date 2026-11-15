@@ -1,0 +1,15 @@
+{
+  "name": "gal1leo-plugins-development",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Browser regression tests with synthetic data for GAL1LEO plugins",
+  "engines": {
+    "node": "24.x"
+  },
+  "scripts": {
+    "test:browser": "playwright test"
+  },
+  "devDependencies": {
+    "@playwright/test": "1.64.0"
+  }
+}

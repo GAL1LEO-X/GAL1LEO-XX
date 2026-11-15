@@ -1,0 +1,15 @@
+{
+  "schemaVersion": 8,
+  "migrations": [
+    {
+      "from": 6,
+      "to": 7,
+      "sql": "6-7.sql"
+    },
+    {
+      "from": 7,
+      "to": 8,
+      "sql": "7-8.sql"
+    }
+  ]
+}

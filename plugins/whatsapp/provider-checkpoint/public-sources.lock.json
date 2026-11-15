@@ -1,0 +1,24 @@
+{
+  "format": "gal1leo-public-provider-sources-v1",
+  "provider_version": "0.8.7",
+  "trees": {
+    "gows": "58522088e517c1f53f2cb0eaa8fc43807d96fbff",
+    "waha": "c85875e674ec49d9bc8e3dbc1cc179b6f220b341"
+  },
+  "patches": {
+    "patches/gows.patch": "6c742094143dcec01f6eb03076bf36363ab717bfc412a67ea88c693e11c26df2",
+    "patches/waha.patch": "7c4579efc8fdbbff8f4379557f532e501380d95e386f94dd8d98fe3f5969d4ae",
+    "qa120/waha.patch": "43ecc8df27d0f3ecfd7768319e0c59705c0f5a9d308cdba78d8ae3c643ba568a",
+    "qa125/gows.patch": "8a5133d87126906381b16854a51143d2ce4315b2b213abf05e682897388646e9",
+    "qa125/waha.patch": "1f5a37c065fc0ebb865be61e41fafe68fe3c0236ac54fccc69500db5564e0190",
+    "qa129/waha.patch": "17f438a8e7b7341db1a3fbf4eb596595742d0c78515334924765edd704c0fd02",
+    "qa131/waha.patch": "7206d5e137b1a8134d3aa2d6994c3eb5f1c633937c2c5692e28acd6b5e5c10ef",
+    "qa136/gows.patch": "3bdf5aae5a8dc220c8fc8d75309519fcb756d81d50c05095737e0d4b04c7b740",
+    "qa158/gows.patch": "a5178e83f8e58cc714815f45373a2937388696243d2421ae603ad774b8b77ab2",
+    "qa162/gows.patch": "8f79dad70e5c264472df06f581bc4b9b9a0cca05f802eddb425c1412cffb5cdc",
+    "qa174/gows.patch": "0b818314b0b119485feabe5062202b1fc2b9619889ad830a59e27da0f17fed8d",
+    "qa174/waha.patch": "aad252db9bfd5c42b59d538427a4dd6bac056a0860393a93566120c8a10a5bba"
+  },
+  "compiled": false,
+  "live_account_tested": false
+}

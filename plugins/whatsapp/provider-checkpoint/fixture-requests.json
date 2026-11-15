@@ -1,0 +1,118 @@
+[
+  {
+    "operation": "contacts_get_about",
+    "arguments": {
+      "path": {},
+      "query": {
+        "contactId": "1@c.us"
+      },
+      "body": {}
+    },
+    "method": "GET",
+    "path": "/api/contacts/about"
+  },
+  {
+    "operation": "contacts_block",
+    "arguments": {
+      "path": {},
+      "query": {},
+      "body": {
+        "contactId": "1@c.us"
+      }
+    },
+    "method": "POST",
+    "path": "/api/contacts/block"
+  },
+  {
+    "operation": "contacts_unblock",
+    "arguments": {
+      "path": {},
+      "query": {},
+      "body": {
+        "contactId": "1@c.us"
+      }
+    },
+    "method": "POST",
+    "path": "/api/contacts/unblock"
+  },
+  {
+    "operation": "chats_archive_chat",
+    "arguments": {
+      "path": {
+        "chatId": "1@c.us"
+      },
+      "query": {},
+      "body": {}
+    },
+    "method": "POST",
+    "path": "/api/fixture-a/chats/1%40c.us/archive"
+  },
+  {
+    "operation": "chats_unarchive_chat",
+    "arguments": {
+      "path": {
+        "chatId": "1@c.us"
+      },
+      "query": {},
+      "body": {}
+    },
+    "method": "POST",
+    "path": "/api/fixture-a/chats/1%40c.us/unarchive"
+  },
+  {
+    "operation": "messages_set_star",
+    "arguments": {
+      "path": {},
+      "query": {},
+      "body": {
+        "messageId": "false_1@c.us_SYNTHETICAB001",
+        "chatId": "1@c.us",
+        "star": true
+      }
+    },
+    "method": "PUT",
+    "path": "/api/star"
+  },
+  {
+    "operation": "messages_set_star",
+    "arguments": {
+      "path": {},
+      "query": {},
+      "body": {
+        "messageId": "false_1@c.us_SYNTHETICAB001",
+        "chatId": "1@c.us",
+        "star": false
+      }
+    },
+    "method": "PUT",
+    "path": "/api/star"
+  },
+  {
+    "operation": "chats_pin_message",
+    "arguments": {
+      "path": {
+        "chatId": "1@c.us",
+        "messageId": "false_1@c.us_SYNTHETICAB001"
+      },
+      "query": {},
+      "body": {
+        "duration": 86400
+      }
+    },
+    "method": "POST",
+    "path": "/api/fixture-a/chats/1%40c.us/messages/false_1%40c.us_SYNTHETICAB001/pin"
+  },
+  {
+    "operation": "chats_unpin_message",
+    "arguments": {
+      "path": {
+        "chatId": "1@c.us",
+        "messageId": "false_1@c.us_SYNTHETICAB001"
+      },
+      "query": {},
+      "body": {}
+    },
+    "method": "POST",
+    "path": "/api/fixture-a/chats/1%40c.us/messages/false_1%40c.us_SYNTHETICAB001/unpin"
+  }
+]

@@ -1,0 +1,17 @@
+Teslemetry tesla-protocol
+Copyright 2026 Teslemetry
+
+This repository redistributes and extends protocol buffer definitions from:
+
+  - teslamotors/vehicle-command (https://github.com/teslamotors/vehicle-command)
+    Copyright Tesla, Inc. Licensed under the Apache License, Version 2.0.
+
+  - teslamotors/fleet-telemetry (https://github.com/teslamotors/fleet-telemetry)
+    Copyright Tesla, Inc. Licensed under the Apache License, Version 2.0.
+
+  - googleapis/googleapis (google/rpc/status.proto)
+    Copyright Google LLC. Licensed under the Apache License, Version 2.0.
+
+With thanks to Matthew1471/Tesla-API (https://github.com/Matthew1471/Tesla-API)
+for community research on RSA key pairing and the dispatch battery power command.
+

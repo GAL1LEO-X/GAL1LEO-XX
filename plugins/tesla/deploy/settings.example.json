@@ -1,0 +1,35 @@
+{
+  "database": "/var/lib/tesla-personal/state.sqlite3",
+  "encryption_key_file": "/etc/tesla-personal/private/encryption.key",
+  "owner_password_file": "/etc/tesla-personal/private/owner.hash",
+  "owner_subject": "REPLACE_WITH_EXACT_IDP_SUBJECT",
+  "public_url": "https://example.invalid/tesla/mcp",
+  "issuer": "https://identity.example.invalid",
+  "jwks_url": "https://identity.example.invalid/jwks.json",
+  "oauth_client_ids": [
+    "REPLACE_WITH_MCP_CLIENT_ID"
+  ],
+  "live_enabled": false,
+  "region": "eu",
+  "tesla_client_id": "REPLACE_WITH_TESLA_CLIENT_ID",
+  "tesla_client_secret_file": "/etc/tesla-personal/private/tesla-client.secret",
+  "tesla_redirect_uri": "https://example.invalid/tesla/oauth/callback",
+  "command_proxy_url": "https://localhost:4443",
+  "command_proxy_ca": "/etc/tesla-personal/proxy-ca.crt",
+  "telemetry_host": null,
+  "telemetry_port": 443,
+  "telemetry_ca_file": null,
+  "telemetry_bootstrap_servers": [
+    "127.0.0.1:9092"
+  ],
+  "telemetry_topics": [
+    "tesla_V",
+    "tesla_alerts",
+    "tesla_connectivity"
+  ],
+  "callback_hosts": [],
+  "monthly_limit_usd": 10,
+  "history_days": 30,
+  "intent_ttl_seconds": 300,
+  "timezone": "UTC"
+}

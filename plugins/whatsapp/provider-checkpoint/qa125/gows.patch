@@ -1,0 +1,166 @@
+diff --git a/src/storage/helpers/groups.go b/src/storage/helpers/groups.go
+index 4fc4416..57b0b11 100644
+--- a/src/storage/helpers/groups.go
++++ b/src/storage/helpers/groups.go
+@@ -7,11 +7,12 @@ import (
+ )
+ 
+ func UpdateGroupInfo(group *types.GroupInfo, update *events.GroupInfo) (err error) {
+-	err = updateGroupParams(group, update)
++	// Validate the participant version before mutating any cached parameter.
++	err = updateGroupParticipants(group, update)
+ 	if err != nil {
+ 		return err
+ 	}
+-	err = updateGroupParticipants(group, update)
++	err = updateGroupParams(group, update)
+ 	if err != nil {
+ 		return err
+ 	}
+@@ -37,6 +38,29 @@ func updateGroupParams(group *types.GroupInfo, update *events.GroupInfo) error {
+ 	if update.MembershipApprovalMode != nil {
+ 		group.GroupMembershipApprovalMode = *update.MembershipApprovalMode
+ 	}
++	// The pinned whatsmeow emits these nodes as UnknownChanges rather than
++	// typed GroupInfo fields. Decode only its documented byte values.
++	for _, change := range update.UnknownChanges {
++		if change == nil {
++			continue
++		}
++		value, ok := change.Content.([]byte)
++		if !ok {
++			continue
++		}
++		switch change.Tag {
++		case "member_add_mode":
++			mode := types.GroupMemberAddMode(value)
++			if mode == types.GroupMemberAddModeAdmin || mode == types.GroupMemberAddModeAllMember {
++				group.MemberAddMode = mode
++			}
++		case "member_share_group_history_mode":
++			mode := types.GroupMemberShareHistoryMode(value)
++			if mode == types.GroupMemberShareHistoryModeAdmin || mode == types.GroupMemberShareHistoryModeAllMember {
++				group.MemberShareHistoryMode = mode
++			}
++		}
++	}
+ 	return nil
+ }
+ 
+@@ -54,12 +78,18 @@ func updateGroupParticipants(group *types.GroupInfo, update *events.GroupInfo) e
+ 		return ErrMismatchedParticipantVersion
+ 	}
+ 
++	// Preserve an absent/inconsistent reported size; a partial list cannot
++	// establish completeness. Maintain only an already coherent cached count.
++	coherentCount := group.ParticipantCount > 0 && group.ParticipantCount == len(group.Participants)
+ 	pm := NewParticipantsMap(group.Participants)
+ 	pm.Join(update.Join)
+ 	pm.Leave(update.Leave)
+ 	pm.Promote(update.Promote)
+ 	pm.Demote(update.Demote)
+ 	group.Participants = pm.Participants()
++	if coherentCount {
++		group.ParticipantCount = len(group.Participants)
++	}
+ 	group.ParticipantVersionID = update.ParticipantVersionID
+ 	return nil
+ }
+diff --git a/src/storage/helpers/groups_qa125_test.go b/src/storage/helpers/groups_qa125_test.go
+new file mode 100644
+index 0000000..08c023f
+--- /dev/null
++++ b/src/storage/helpers/groups_qa125_test.go
+@@ -0,0 +1,92 @@
++package helpers
++
++import (
++	waBinary "go.mau.fi/whatsmeow/binary"
++	"go.mau.fi/whatsmeow/types"
++	"go.mau.fi/whatsmeow/types/events"
++	"testing"
++)
++
++func TestQA125GroupSettingsFromUnknownChanges(t *testing.T) {
++	g := BuildGroup()
++	e := events.GroupInfo{UnknownChanges: []*waBinary.Node{
++		{Tag: "member_add_mode", Content: []byte("admin_add")},
++		{Tag: "member_share_group_history_mode", Content: []byte("admin_share")},
++	}}
++	if err := UpdateGroupInfo(&g, &e); err != nil {
++		t.Fatal(err)
++	}
++	if g.MemberAddMode != types.GroupMemberAddModeAdmin {
++		t.Fatal("member add mode was not updated")
++	}
++	if g.MemberShareHistoryMode != types.GroupMemberShareHistoryModeAdmin {
++		t.Fatal("history share mode was not updated")
++	}
++	e.UnknownChanges = []*waBinary.Node{{Tag: "member_add_mode", Content: []byte("all_member_add")}, {Tag: "member_share_group_history_mode", Content: []byte("all_member_share")}}
++	if err := UpdateGroupInfo(&g, &e); err != nil {
++		t.Fatal(err)
++	}
++	if g.MemberAddMode != types.GroupMemberAddModeAllMember || g.MemberShareHistoryMode != types.GroupMemberShareHistoryModeAllMember {
++		t.Fatal("settings restoration missing")
++	}
++}
++
++func TestQA125UnknownSettingsDoNotEraseCachedValues(t *testing.T) {
++	g := BuildGroup()
++	g.MemberAddMode = types.GroupMemberAddModeAdmin
++	g.MemberShareHistoryMode = types.GroupMemberShareHistoryModeAdmin
++	for _, content := range []any{nil, []byte("future_value"), "all_member_add", []waBinary.Node{}} {
++		e := events.GroupInfo{UnknownChanges: []*waBinary.Node{nil, {Tag: "member_add_mode", Content: content}, {Tag: "member_share_group_history_mode", Content: content}}}
++		if err := UpdateGroupInfo(&g, &e); err != nil {
++			t.Fatal(err)
++		}
++		if g.MemberAddMode != types.GroupMemberAddModeAdmin || g.MemberShareHistoryMode != types.GroupMemberShareHistoryModeAdmin {
++			t.Fatal("invalid payload overwrote known setting")
++		}
++	}
++}
++
++func TestQA125CoherentParticipantCountTracksJoinLeave(t *testing.T) {
++	g := BuildGroup()
++	g.ParticipantCount = len(g.Participants)
++	join := events.GroupInfo{Join: []types.JID{notInGroupJid}, PrevParticipantVersionID: firstParticipantVersionID, ParticipantVersionID: newParticipantVersionID}
++	if err := UpdateGroupInfo(&g, &join); err != nil {
++		t.Fatal(err)
++	}
++	if g.ParticipantCount != 3 || len(g.Participants) != 3 {
++		t.Fatal("count did not track join")
++	}
++	leave := events.GroupInfo{Leave: []types.JID{notInGroupJid}, PrevParticipantVersionID: newParticipantVersionID, ParticipantVersionID: "next"}
++	if err := UpdateGroupInfo(&g, &leave); err != nil {
++		t.Fatal(err)
++	}
++	if g.ParticipantCount != 2 || len(g.Participants) != 2 {
++		t.Fatal("count did not track leave")
++	}
++}
++
++func TestQA125UncertainCountIsNotReconstructedFromPartialList(t *testing.T) {
++	for _, count := range []int{0, 1, 10} {
++		g := BuildGroup()
++		g.ParticipantCount = count
++		e := events.GroupInfo{Join: []types.JID{notInGroupJid}, PrevParticipantVersionID: firstParticipantVersionID, ParticipantVersionID: newParticipantVersionID}
++		if err := UpdateGroupInfo(&g, &e); err != nil {
++			t.Fatal(err)
++		}
++		if g.ParticipantCount != count {
++			t.Fatal("unverified count silently replaced")
++		}
++	}
++}
++
++func TestQA125VersionMismatchDoesNotPartiallyChangeParameters(t *testing.T) {
++	g := BuildGroup()
++	g.ParticipantCount = 2
++	e := events.GroupInfo{Name: &types.GroupName{Name: "Must not commit"}, Join: []types.JID{notInGroupJid}, PrevParticipantVersionID: "wrong", ParticipantVersionID: newParticipantVersionID}
++	if err := UpdateGroupInfo(&g, &e); err != ErrMismatchedParticipantVersion {
++		t.Fatal("version mismatch missing")
++	}
++	if g.Name != "Test Group" || len(g.Participants) != 2 || g.ParticipantCount != 2 || g.ParticipantVersionID != firstParticipantVersionID {
++		t.Fatal("rejected event partially mutated cache")
++	}
++}

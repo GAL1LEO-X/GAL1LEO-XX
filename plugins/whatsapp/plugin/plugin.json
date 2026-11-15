@@ -1,0 +1,39 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "whatsapp-personal",
+  "version": "0.3.0",
+  "description": "Read and search WhatsApp chats, manage groups and notifications, and send messages and attachments on request.",
+  "author": {
+    "name": "GAL1LEO",
+    "email": "info@gal1leo.com"
+  },
+  "keywords": [
+    "whatsapp",
+    "messages",
+    "personal"
+  ],
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "WhatsApp",
+        "shortDescription": "WhatsApp with ChatGPT",
+        "longDescription": "Self-hosted connection between WhatsApp and ChatGPT. Read and search chats, retrieve attachments, send messages, manage groups, access available history and receive events. Actions follow your instructions and connection permissions.",
+        "developerName": "GAL1LEO",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "defaultPrompt": [
+          "Search my WhatsApp conversations.",
+          "Show my WhatsApp connection status."
+        ],
+        "logo": "./assets/whatsapp-gpt.png",
+        "composerIcon": "./assets/whatsapp-gpt.png"
+      },
+      "onboardingSkill": "./skills/whatsapp-setup/SKILL.md"
+    }
+  },
+  "repository": "https://github.com/GAL1LEO-X/GAL1LEO-XX",
+  "license": "Apache-2.0"
+}

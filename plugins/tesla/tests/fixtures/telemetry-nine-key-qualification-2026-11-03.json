@@ -1,0 +1,112 @@
+{
+  "synthetic_only": true,
+  "reviewed_at": "2026-11-03",
+  "official_schema": {
+    "repository": "teslamotors/fleet-telemetry",
+    "commit": "18800f7738757a741479e71b38ece584d363ef2d",
+    "git_blob_sha": "20379595e233f578c050364ef211659f7edbb2a6",
+    "current_main_blob_matched_at_review": true,
+    "url": "https://github.com/teslamotors/fleet-telemetry/blob/18800f7738757a741479e71b38ece584d363ef2d/protos/vehicle_data.proto",
+    "scope": "Field keys and a dynamic Value oneof; no per-key value type mapping"
+  },
+  "official_data_table": {
+    "url": "https://developer.tesla.com/docs/fleet-api/fleet-telemetry/available-data",
+    "reviewed_at": "2026-11-03",
+    "field_specific_contracts_found": 0
+  },
+  "qualification": "unqualified",
+  "qualification_reason": "field_value_contract_unavailable",
+  "fields": [
+    {
+      "field": "GpsAccuracyMeters",
+      "field_id": 260,
+      "qualified_value_contract": false
+    },
+    {
+      "field": "LifetimeEnergyChargedKwh",
+      "field_id": 261,
+      "qualified_value_contract": false
+    },
+    {
+      "field": "BrickSocMinPercent",
+      "field_id": 262,
+      "qualified_value_contract": false
+    },
+    {
+      "field": "NominalFullPackEnergyKwh",
+      "field_id": 263,
+      "qualified_value_contract": false
+    },
+    {
+      "field": "GradeEstimatePercent",
+      "field_id": 264,
+      "qualified_value_contract": false
+    },
+    {
+      "field": "MaxSpeedToReachDestinationMph",
+      "field_id": 265,
+      "qualified_value_contract": false
+    },
+    {
+      "field": "SoftwareUpdateAvailable",
+      "field_id": 266,
+      "qualified_value_contract": false
+    },
+    {
+      "field": "SoftwareUpdateInProgress",
+      "field_id": 267,
+      "qualified_value_contract": false
+    },
+    {
+      "field": "RemoteStartActive",
+      "field_id": 268,
+      "qualified_value_contract": false
+    }
+  ],
+  "synthetic_envelopes": [
+    {
+      "envelope": {
+        "floatValue": 12.5
+      },
+      "expected_value": 12.5,
+      "expected_quality": "unqualified"
+    },
+    {
+      "envelope": {
+        "booleanValue": false
+      },
+      "expected_value": false,
+      "expected_quality": "unqualified"
+    },
+    {
+      "envelope": {
+        "stringValue": "synthetic-value"
+      },
+      "expected_value": "synthetic-value",
+      "expected_quality": "unqualified"
+    },
+    {
+      "envelope": {
+        "invalid": true
+      },
+      "expected_value": null,
+      "expected_quality": "invalid"
+    },
+    {
+      "envelope": {
+        "floatValue": 12.5,
+        "booleanValue": false
+      },
+      "expected_value": null,
+      "expected_quality": "invalid"
+    },
+    {
+      "envelope": {
+        "floatValue": "not-a-number"
+      },
+      "expected_value": null,
+      "expected_quality": "invalid"
+    }
+  ],
+  "envelope_note": "Every envelope is intentionally exercised against every key. They validate oneof handling only and are not assertions that the vehicle emits those branches for those keys."
+}

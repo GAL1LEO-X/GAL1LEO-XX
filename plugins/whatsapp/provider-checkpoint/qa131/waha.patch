@@ -1,0 +1,194 @@
+diff --git a/checkpoints/offline-ab/qa131.test.cjs b/checkpoints/offline-ab/qa131.test.cjs
+new file mode 100644
+index 0000000..ebc2915
+--- /dev/null
++++ b/checkpoints/offline-ab/qa131.test.cjs
+@@ -0,0 +1,172 @@
++// Synthetic loopback HTTP/TLS peers only. Run in a network-isolated namespace.
++const assert = require('node:assert/strict');
++const crypto = require('node:crypto');
++const fs = require('node:fs');
++const http = require('node:http');
++const https = require('node:https');
++const os = require('node:os');
++const path = require('node:path');
++const vm = require('node:vm');
++const { createRequire } = require('node:module');
++const { execFileSync, spawn } = require('node:child_process');
++
++function senderClass() {
++  if (process.env.QA131_COMPILED_SENDER) {
++    return require(process.env.QA131_COMPILED_SENDER).WebhookSender;
++  }
++  const file = path.resolve(__dirname, '../../src/modules/waha-webhook/WebhookPlugin.sender.ts');
++  const ts = require('typescript');
++  const code = ts.transpileModule(fs.readFileSync(file, 'utf8'), {
++    compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020 },
++  }).outputText;
++  const localRequire = createRequire(file);
++  const fixture = { exports: {} };
++  vm.runInNewContext(code, {
++    exports: fixture.exports, module: fixture,
++    require(name) {
++      if (name === '@waha/structures/enums.dto') return { SECOND: 1000 };
++      if (name === '@waha/structures/webhooks.config.dto') {
++        return { RetryPolicy: { LINEAR: 'linear', CONSTANT: 'constant', EXPONENTIAL: 'exponential' } };
++      }
++      if (name === '@waha/version') return { VERSION: { version: 'synthetic' } };
++      return localRequire(name);
++    },
++  }, { filename: file });
++  return fixture.exports.WebhookSender;
++}
++
++async function child() {
++  const input = JSON.parse(process.argv[process.argv.indexOf('--child') + 1]);
++  const Sender = senderClass();
++  const rows = [];
++  let complete;
++  const done = new Promise(resolve => { complete = resolve; });
++  const logger = {};
++  for (const level of ['debug', 'info', 'warn', 'error']) {
++    logger[level] = (fields, message) => {
++      rows.push({ level: level, fields: fields, message: message });
++      if (level === 'error' || (level === 'info' && message?.startsWith('POST request was sent'))) complete();
++    };
++  }
++  const sender = new Sender({ child: () => logger }, {
++    url: input.url, hmac: { key: 'test-key' },
++    retries: { delaySeconds: 0, attempts: input.retries ?? 0 },
++  });
++  sender.send({ id: 'qa131-synthetic-event', event: 'synthetic.event', payload: { synthetic: true } });
++  const timeout = setTimeout(() => { throw new Error('Synthetic sender timed out'); }, 10000);
++  await done;
++  clearTimeout(timeout);
++  for (const agent of Object.values(Sender.AGENTS)) agent.destroy();
++  process.stdout.write(JSON.stringify({
++    success: rows.some(row => row.message?.startsWith('POST request was sent')),
++    retries: rows.filter(row => row.level === 'warn').length,
++    terminalValidation: rows.some(row => row.fields?.event === 'webhook.delivery.rejected'),
++    errors: rows.filter(row => row.level === 'error').map(row => row.fields?.error ?? row.message),
++  }) + '\n');
++}
++
++function fixtures() {
++  const root = fs.mkdtempSync(path.join(os.tmpdir(), 'qa131-tls-'));
++  function openssl(...args) {
++    execFileSync('openssl', args, { cwd: root, stdio: 'pipe', timeout: 10000 });
++  }
++  try {
++    fs.mkdirSync(path.join(root, 'issued'));
++    fs.writeFileSync(path.join(root, 'index'), '');
++    fs.writeFileSync(path.join(root, 'serial'), '1000\n');
++    openssl('req', '-new', '-x509', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:P-256',
++      '-nodes', '-sha256', '-days', '2', '-subj', '/CN=QA131 synthetic CA', '-keyout', 'ca.key', '-out', 'ca.pem');
++    openssl('req', '-new', '-newkey', 'ec', '-pkeyopt', 'ec_paramgen_curve:P-256', '-nodes',
++      '-subj', '/CN=localhost', '-keyout', 'leaf.key', '-out', 'leaf.csr');
++    const config = `[ca]\ndefault_ca = issuer\n[issuer]\ndatabase = index\nnew_certs_dir = issued\ncertificate = ca.pem\nprivate_key = ca.key\nserial = serial\ndefault_md = sha256\ndefault_days = 2\npolicy = policy\nunique_subject = no\nx509_extensions = valid\n[policy]\ncommonName = supplied\n[valid]\nbasicConstraints = critical,CA:FALSE\nkeyUsage = critical,digitalSignature\nextendedKeyUsage = serverAuth\nsubjectAltName = DNS:localhost,IP:127.0.0.1\n[wrong]\nbasicConstraints = critical,CA:FALSE\nkeyUsage = critical,digitalSignature\nextendedKeyUsage = serverAuth\nsubjectAltName = DNS:wrong.invalid\n`;
++    fs.writeFileSync(path.join(root, 'ca.cnf'), config);
++    for (const name of ['valid', 'wrong', 'expired']) {
++      const args = ['ca', '-batch', '-notext', '-config', 'ca.cnf', '-in', 'leaf.csr', '-out', name + '.pem',
++        '-extensions', name === 'wrong' ? 'wrong' : 'valid'];
++      if (name === 'expired') args.push('-startdate', '20200101000000Z', '-enddate', '20200102000000Z');
++      openssl(...args);
++    }
++    return root;
++  } catch (error) {
++    fs.rmSync(root, { recursive: true, force: true });
++    throw error;
++  }
++}
++
++function runSender(input, ca, disableGlobalVerification) {
++  const env = { PATH: process.env.PATH, LANG: 'C' };
++  if (ca) env.NODE_EXTRA_CA_CERTS = ca;
++  if (disableGlobalVerification) env.NODE_TLS_REJECT_UNAUTHORIZED = '0';
++  if (process.env.QA131_COMPILED_SENDER) env.QA131_COMPILED_SENDER = process.env.QA131_COMPILED_SENDER;
++  return new Promise((resolve, reject) => {
++    const processChild = spawn(process.execPath, [__filename, '--child', JSON.stringify(input)], { env: env });
++    let stdout = '', stderr = '';
++    processChild.stdout.on('data', data => { stdout += data; });
++    processChild.stderr.on('data', data => { stderr += data; });
++    processChild.on('error', reject);
++    processChild.on('close', code => {
++      if (code !== 0) return reject(new Error('Synthetic sender failed: ' + stderr));
++      try { resolve(JSON.parse(stdout)); } catch (error) { reject(error); }
++    });
++  });
++}
++
++function suite() {
++  const { test, before, after } = require('node:test');
++  let root;
++  before(() => { root = fixtures(); });
++  after(() => { if (root) fs.rmSync(root, { recursive: true, force: true }); });
++  for (const scenario of [
++    { name: 'untrusted CA is rejected before HTTP', certificate: 'valid', trusted: false, accepted: false },
++    { name: 'trusted CA and matching hostname are accepted', certificate: 'valid', trusted: true, accepted: true },
++    { name: 'wrong hostname is rejected with trusted CA', certificate: 'wrong', trusted: true, accepted: false },
++    { name: 'expired certificate is rejected with trusted CA', certificate: 'expired', trusted: true, accepted: false },
++    { name: 'explicit verification survives unsafe global override', certificate: 'valid', trusted: false, accepted: false, override: true },
++    { name: 'TLS failure preserves the configured retry budget', certificate: 'valid', trusted: false, accepted: false, retries: 2 },
++    { name: 'trusted HTTPS retries 503 then succeeds with identical HMAC', certificate: 'valid', trusted: true, accepted: true, transient: true, retries: 2 },
++    { name: 'existing HTTP transport still sends signed payload', accepted: true, http: true },
++  ]) {
++    test(scenario.name, { timeout: 15000 }, async () => {
++      const requests = [];
++      function receive(req, res) {
++        let body = '';
++        req.on('data', chunk => { body += chunk; });
++        req.on('end', () => {
++          requests.push({ body: body, headers: req.headers });
++          res.writeHead(scenario.transient && requests.length === 1 ? 503 : 200, { 'content-type': 'application/json' });
++          res.end('{}');
++        });
++      }
++      const server = scenario.http ? http.createServer(receive) : https.createServer({
++        key: fs.readFileSync(path.join(root, 'leaf.key')),
++        cert: fs.readFileSync(path.join(root, scenario.certificate + '.pem')),
++      }, receive);
++      await new Promise(resolve => server.listen(0, '127.0.0.1', resolve));
++      try {
++        const result = await runSender({ url: `${scenario.http ? 'http' : 'https'}://127.0.0.1:${server.address().port}/webhook`, retries: scenario.retries },
++          scenario.trusted ? path.join(root, 'ca.pem') : undefined, scenario.override);
++        assert.equal(result.success, scenario.accepted);
++        assert.equal(result.terminalValidation, false);
++        assert.equal(result.retries, scenario.transient ? 1 : scenario.accepted ? 0 : scenario.retries ?? 0);
++        assert.equal(requests.length, scenario.accepted ? scenario.transient ? 2 : 1 : 0);
++        for (const request of requests) {
++          assert.equal(request.headers['x-webhook-hmac'], crypto.createHmac('sha512', 'test-key').update(request.body).digest('hex'));
++        }
++        if (requests.length === 2) {
++          assert.equal(requests[0].body, requests[1].body);
++          for (const header of ['x-webhook-hmac', 'x-webhook-request-id']) assert.equal(requests[0].headers[header], requests[1].headers[header]);
++        }
++        if (!scenario.accepted) assert.match(result.errors.join(' '), /certificate|Hostname\/IP|self.signed|unable to verify/i);
++      } finally {
++        server.closeAllConnections();
++        await new Promise(resolve => server.close(resolve));
++      }
++    });
++  }
++}
++
++if (process.argv.includes('--child')) {
++  child().catch(error => { process.stderr.write(error.stack + '\n'); process.exitCode = 1; });
++} else {
++  suite();
++}
+diff --git a/src/modules/waha-webhook/WebhookPlugin.sender.ts b/src/modules/waha-webhook/WebhookPlugin.sender.ts
+index ce0d172..b55b3ad 100644
+--- a/src/modules/waha-webhook/WebhookPlugin.sender.ts
++++ b/src/modules/waha-webhook/WebhookPlugin.sender.ts
+@@ -70,7 +70,10 @@ export function exponentialDelay(delayFactor: number) {
+ export class WebhookSender {
+   protected static AGENTS = {
+     http: new HttpAgent({}),
+-    https: new HttpsAgent({ rejectUnauthorized: false }),
++    // Keep certificate and hostname checks enabled, including when a process
++    // override disables TLS verification elsewhere. Private CAs can use Node's
++    // standard NODE_EXTRA_CA_CERTS trust configuration.
++    https: new HttpsAgent({ rejectUnauthorized: true }),
+   };
+
+   protected url: string;

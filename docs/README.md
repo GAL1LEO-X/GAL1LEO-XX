@@ -1,5 +1,7 @@
 # Documentation
 
-Shared documentation for public projects belongs here.
-
-Each project must include instructions and tests, and its license must be selected before publishing its code.
+- [Development and verification](DEVELOPMENT.md)
+- [Public import scope](PUBLICATION.md)
+- [Tesla](../plugins/tesla/README.md)
+- [WhatsApp](../plugins/whatsapp/README.md)
+- [Shared host components](../host/README.md)

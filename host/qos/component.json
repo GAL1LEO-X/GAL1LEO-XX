@@ -1,0 +1,9 @@
+{
+  "name": "develative-host-qos",
+  "version": "0.1.0",
+  "owner": "host",
+  "source": "host/qos",
+  "distribution": "GAL1LEO-X/GAL1LEO-XX",
+  "application_lifecycle": "retain",
+  "execution": "finite-host-apply-with-explicit-admission"
+}

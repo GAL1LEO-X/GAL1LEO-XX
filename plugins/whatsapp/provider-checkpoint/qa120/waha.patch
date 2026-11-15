@@ -1,0 +1,149 @@
+diff --git a/checkpoints/offline-ab/http-bridge.cjs b/checkpoints/offline-ab/http-bridge.cjs
+index 5bf223919476d81ab4772f741cf17625a582b5f3..c7e7a5ffa3019de7c606eed6ad47d63e913af4e6 100644
+--- a/checkpoints/offline-ab/http-bridge.cjs
++++ b/checkpoints/offline-ab/http-bridge.cjs
+@@ -104,8 +104,7 @@ async function route(request, response) {
+   }
+   if (request.method === 'PUT' && url.pathname === '/api/star') {
+     await adapter(data.session).setStar(data);
+-    response.writeHead(200);
+-    return response.end();
++    return json(response, 200, { success: true });
+   }
+   const chat = url.pathname.match(/^\/api\/([^/]+)\/chats\/([^/]+)\/(archive|unarchive)$/);
+   if (request.method === 'POST' && chat) {
+diff --git a/checkpoints/offline-ab/nest-controller.test.cjs b/checkpoints/offline-ab/nest-controller.test.cjs
+index 42f350f849af3891fe95a0d18a437308841f8d5b..0fc5d66bf49eeaa471593cc536f1e1a459b44a6a 100644
+--- a/checkpoints/offline-ab/nest-controller.test.cjs
++++ b/checkpoints/offline-ab/nest-controller.test.cjs
+@@ -276,7 +276,7 @@ test('actual Nest controllers over HTTP and real Go fake gRPC', async function(t
+             from_me: false,
+             participant: '',
+           });
+-        if (rpc === 'SetMessagePin')
++        if (rpc === 'SetMessagePin' || rpc === 'SetMessageStar')
+           assert.deepEqual(result.body, { success: true });
+       }
+       assert.equal(
+diff --git a/checkpoints/offline-ab/package.json b/checkpoints/offline-ab/package.json
+index a5f4f9981d9e411beed175e3cce992dc14f9e21b..7a7b328a7ffd08c0b484b94317bc014bc1d4544e 100644
+--- a/checkpoints/offline-ab/package.json
++++ b/checkpoints/offline-ab/package.json
+@@ -6,7 +6,7 @@
+     "generate": "node ../../scripts/gows-proto.js build --bin-dir checkpoints/offline-ab/node_modules/.bin",
+     "build": "tsc --project tsconfig.json",
+     "build:api": "tsc --project tsconfig.api.json",
+-    "test": "npm run build && npm run build:api && node --test adapter.test.cjs api-context.test.cjs message-identity.test.cjs",
++    "test": "npm run build && npm run build:api && node --test adapter.test.cjs api-context.test.cjs message-identity.test.cjs qa120.test.cjs",
+     "test:media": "npm run build && node --test media-send.test.cjs",
+     "test:lottie": "npm run build && node --test lottie-original.test.cjs",
+     "vertical": "npm run build && node vertical.cjs"
+diff --git a/checkpoints/offline-ab/qa120.test.cjs b/checkpoints/offline-ab/qa120.test.cjs
+new file mode 100644
+index 0000000000000000000000000000000000000000..56c3b1a3e0a5880dbbac7eab127f9139a2df434c
+--- /dev/null
++++ b/checkpoints/offline-ab/qa120.test.cjs
+@@ -0,0 +1,66 @@
++// Actual source-extracted methods; inert cache/hooks and A/B adapter, no session.
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const path = require('node:path');
++const vm = require('node:vm');
++const ts = require('typescript');
++
++function sourceMethods(file, className, names) {
++  const source = ts.createSourceFile(file, fs.readFileSync(path.resolve(__dirname, '../../', file), 'utf8'), ts.ScriptTarget.Latest, true);
++  const klass = source.statements.find(s => ts.isClassDeclaration(s) && s.name.text === className);
++  assert.ok(klass);
++  return names.map(name => {
++    const method = klass.members.find(m => ts.isMethodDeclaration(m) && m.name.getText(source) === name);
++    assert.ok(method, name);
++    // Remove decorators through the AST, preserving the actual method body.
++    const clean = ts.factory.updateMethodDeclaration(method, method.modifiers?.filter(m => m.kind !== ts.SyntaxKind.Decorator), method.asteriskToken, method.name, method.questionToken, method.typeParameters,
++      method.parameters.map(p => ts.factory.updateParameterDeclaration(p, p.modifiers?.filter(m => m.kind !== ts.SyntaxKind.Decorator), p.dotDotDotToken, p.name, p.questionToken, p.type, p.initializer)), method.type, method.body);
++    return ts.createPrinter().printNode(ts.EmitHint.Unspecified, clean, source);
++  }).join('\n');
++}
++function fixture(methods, bindings) {
++  const code = ts.transpileModule('class Fixture {\n' + methods + '\n}', {compilerOptions: {target: ts.ScriptTarget.ES2020}}).outputText;
++  return vm.runInNewContext(code + '\nFixture', bindings);
++}
++const presenceMethods = sourceMethods('src/core/engines/gows/session.gows.core.ts', 'WhatsappSessionGoWSCore', ['getPresences', 'getPresence']);
++for (const filled of [false, true]) {
++  test('F10 presence cache uses JIDs, populated=' + filled, async () => {
++    let waits = 0, subscriptions = 0;
++    const Fixture = fixture(presenceMethods, {sleep: async () => { waits++; }});
++    const session = new Fixture();
++    const chat = '199999998@s.whatsapp.net';
++    const values = new Map(filled ? [[chat, [{lastKnownPresence: 'online'}]]] : []);
++    session.presences = {keys: () => [...values.keys()], get: id => values.get(id), has: id => values.has(id)};
++    session.toWahaPresences = (id, presences) => ({id, presences});
++    session.hooks = {wid: {chat: {promise: async id => id}}};
++    session.subscribePresence = async () => { subscriptions++; };
++    const all = await session.getPresences();
++    assert.equal(all.length, filled ? 1 : 0);
++    if (filled) assert.equal(all[0].id, chat);
++    const one = await session.getPresence(chat);
++    assert.equal(one.id, chat);
++    assert.equal(one.presences.length, filled ? 1 : 0);
++    assert.equal(waits, filled ? 0 : 1);
++    assert.equal(subscriptions, 1);
++  });
++}
++const starMethod = sourceMethods('src/api/chatting.controller.ts', 'ChattingController', ['setStar']);
++for (const star of [true, false]) {
++  for (const failed of [false, true]) {
++    test('F03 controller acknowledgement star=' + star + ' failed=' + failed, async () => {
++      let calls = 0;
++      const Fixture = fixture(starMethod, {withABRequestIntent: async (id, timestamp, action) => action()});
++      const controller = new Fixture();
++      controller.manager = {getWorkingSession: async () => ({setStar: async request => {
++        calls++;
++        assert.equal(request.star, star);
++        if (failed) throw new Error('uncertain');
++      }})};
++      const action = controller.setStar({session: 'synthetic', star}, 'synthetic-intent', '1792769200000');
++      if (failed) await assert.rejects(action, /uncertain/);
++      else assert.equal(JSON.stringify(await action), '{"success":true}');
++      assert.equal(calls, 1);
++    });
++  }
++}
+diff --git a/src/api/chatting.controller.ts b/src/api/chatting.controller.ts
+index 83245d9ec354658bcf772e1ab20694d75960ea42..e10a1036109e0be0a301ecb49d7b27bdb29ce41a 100644
+--- a/src/api/chatting.controller.ts
++++ b/src/api/chatting.controller.ts
+@@ -295,7 +295,9 @@ export class ChattingController {
+     await withABRequestIntent(intentId, timestamp, () =>
+       whatsapp.setStar(request),
+     );
+-    return;
++    // The A/B adapter rejects uncertain or mismatched acknowledgements.
++    // Only its completed operation can acknowledge this request.
++    return { success: true };
+   }
+
+   @Post('/sendPoll')
+diff --git a/src/core/engines/gows/session.gows.core.ts b/src/core/engines/gows/session.gows.core.ts
+index 3e366a5eac8d1d15f3d6dbe19a94f4b5183c85ee..c5fccfcb37637a4aba6116884f7c29f6a3713abb 100644
+--- a/src/core/engines/gows/session.gows.core.ts
++++ b/src/core/engines/gows/session.gows.core.ts
+@@ -2192,7 +2192,7 @@ export class WhatsappSessionGoWSCore extends WhatsappSession {
+
+   public async getPresences(): Promise<WAHAChatPresences[]> {
+     const result: WAHAChatPresences[] = [];
+-    for (const remoteJid in this.presences.keys()) {
++    for (const remoteJid of this.presences.keys()) {
+       const storedPresences = this.presences.get(remoteJid);
+       result.push(this.toWahaPresences(remoteJid, storedPresences));
+     }
+@@ -2202,7 +2202,7 @@ export class WhatsappSessionGoWSCore extends WhatsappSession {
+   public async getPresence(chatId: string): Promise<WAHAChatPresences> {
+     const jid = await this.hooks.wid.chat.promise(chatId, 'getPresence');
+     await this.subscribePresence(jid);
+-    if (!(jid in this.presences.keys())) {
++    if (!this.presences.has(jid)) {
+       await sleep(1000);
+     }
+     const result = this.presences.get(jid) || [];
