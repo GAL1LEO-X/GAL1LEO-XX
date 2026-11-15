@@ -1,0 +1,15 @@
+{
+  "purpose": "Immutable qualification receipt for the historical schema-2 to schema-3 adapter; not current candidate pins",
+  "version": "1.0.1",
+  "schema": 3,
+  "commit": "69deb9039c291739741600092c75fe0eefc4b292",
+  "source_archive_sha256": "e07d4bd062775912b600417e6eaed69b15022437cb1f5adc68029088d92bf3a9",
+  "source_archive_bytes": 2262127,
+  "adapter_sha256": "ade6c0e03d070576efa55075026af04ac2ad57142a711e63962f83e4b3833221",
+  "candidate_files": {
+    "src/tesla_plugin/store.py": "89b06e4fd7ee5efb4d132878c22e4c9e9aa6542e4ee96d9469a889b88d643119",
+    "src/tesla_plugin/schema_migrations.py": "bb9139ee1eb308b6b17d0f0f8aec047015f1a486772c840a6006cfccbc865162",
+    "requirements.lock": "6cbae69d16074ead0fbb8897af9e5bdbbdfcc76f6be33fb050847a1325a15cd1"
+  },
+  "verification": "Each storage file hash matched both git show at the exact commit and the locally retained source archive on 2026-11-02; no historical source copies are bundled"
+}

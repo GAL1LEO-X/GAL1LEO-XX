@@ -1,0 +1,153 @@
+"""Consistent root-only backup of a selected user, or all registered users.
+
+Briefly stops only the selected instance. Credentials included: never publish.
+The shared authentication snapshot requires coordinated restoration.
+"""
+import argparse
+from contextlib import closing
+from datetime import datetime,UTC
+import hashlib
+import json
+import os
+from pathlib import Path
+import signal
+import sqlite3
+import subprocess
+import tarfile
+import time
+
+import httpx
+from sally_whatsapp.tenancy import Instance,ROOT
+
+
+class BackupError(RuntimeError):
+    def __init__(self,complete,failures):
+        self.complete,self.failures=complete,failures
+        # Keep provider details available to the caller without printing secrets.
+        summary=', '.join(stage+' ('+type(error).__name__+')' for stage,error in failures)
+        super().__init__(('Snapshot completed' if complete else 'Snapshot incomplete')+'; failures: '+summary)
+
+
+def restore_components(instance,running_gateway,running_bridge):
+    components=[]
+    if running_gateway:
+        components.append(('gateway',[str(instance.wrapper),'systemctl','--user','start','whatsapp-waha.service'],
+                           f'http://127.0.0.1:{instance.gateway_port}/api/version'))
+    if running_bridge:
+        components.append(('bridge',['systemctl','start',instance.base+'.service'],
+                           f'http://127.0.0.1:{instance.bridge_port}/healthz'))
+    failures=[]
+    for name,command,_ in components:
+        try: subprocess.run(command,check=True)
+        except Exception as error: failures.append((name+'.start',error))
+    if not components: return failures
+    try:
+        with httpx.Client(timeout=2,trust_env=False,follow_redirects=False) as client:
+            for name,_,url in components:
+                try:
+                    headers={'X-Api-Key':(instance.config_dir/'waha.key').read_text().strip()} if name=='gateway' else {}
+                    for attempt in range(30):
+                        try:
+                            if client.get(url,headers=headers).is_success: break
+                        except httpx.HTTPError: pass
+                        if attempt<29: time.sleep(1)
+                    else: raise RuntimeError('HTTP readiness did not recover')
+                except Exception as error: failures.append((name+'.readiness',error))
+    except Exception as error:
+        failures.append(('readiness.client',error))
+    return failures
+
+
+def snapshot_database(source,target):
+    with closing(sqlite3.connect('file:'+str(source)+'?mode=ro',uri=True)) as db,closing(sqlite3.connect(target)) as snapshot:
+        db.backup(snapshot)
+        if snapshot.execute('PRAGMA integrity_check').fetchone()[0]!='ok': raise RuntimeError('Backup integrity check failed')
+        # The online backup inherits WAL mode. Checkpoint and close explicitly so
+        # the manifest cannot include transient -wal/-shm files later removed.
+        snapshot.execute('PRAGMA wal_checkpoint(TRUNCATE)')
+        if snapshot.execute('PRAGMA journal_mode=DELETE').fetchone()[0]!='delete':
+            raise RuntimeError('Backup must be a standalone SQLite database')
+
+
+def backup(instance):
+    stamp=datetime.now(UTC).strftime('%Y%m%dT%H%M%S%fZ')
+    target=Path('/var/backups')/instance.base/'snapshots'/stamp
+    target.mkdir(parents=True,mode=0o700)
+    bridge=['systemctl'];gateway=[str(instance.wrapper),'systemctl','--user']
+    running_bridge=subprocess.run([*bridge,'is-active','--quiet',instance.base+'.service']).returncode==0
+    running_gateway=subprocess.run([*gateway,'is-active','--quiet','whatsapp-waha.service']).returncode==0
+    completed=False
+    failures=[]
+    try:
+        if running_bridge: subprocess.run([*bridge,'stop',instance.base+'.service'],check=True)
+        if running_gateway: subprocess.run([*gateway,'stop','whatsapp-waha.service'],check=True)
+        snapshot_database(instance.state_dir/'archive.sqlite',target/'archive.sqlite')
+        snapshot_database('/var/lib/sally-browser/stack/authelia/db.sqlite3',target/'shared-authelia.sqlite3')
+        paths=[instance.config_dir,instance.gateway_home/'sessions',instance.gateway_home/'media',instance.private_dir,
+               ROOT/'private/tenants.json',Path('/etc/systemd/system')/(instance.base+'.service'),
+               Path('/etc/apache2/sites-available')/(instance.base+'-http.conf'),
+               Path('/etc/apache2/sites-available')/(instance.base+'-https.conf'),
+               instance.gateway_home/'.config/containers/systemd/whatsapp-waha.container',
+               Path('/var/lib/sally-browser/stack/config/authelia.yml'),Path('/var/lib/sally-browser/stack/config/users.yml'),
+               instance.state_dir/'media-cache',instance.state_dir/'diagnostics']
+        if instance.slug=='personal': paths.extend([ROOT/'private/identity.json',ROOT/'scripts/as-user'])
+        with tarfile.open(target/'private-runtime.tar.gz','w:gz') as archive:
+            for path in paths:
+                if path.exists(): archive.add(path,arcname=str(path).lstrip('/'))
+        subprocess.run([str(ROOT/'.venv/bin/python'),str(ROOT/'scripts/package_source.py'),str(target/'source.tar.gz')],check=True,capture_output=True)
+        manifest={'format':'whatsapp-isolated-backup-v3','user':instance.slug,'created_utc':stamp,
+                  'sqlite_integrity':'ok','includes_credentials':True,'files':{}}
+        for path in target.iterdir():
+            if path.is_file():
+                with path.open('rb') as stream: checksum=hashlib.file_digest(stream,'sha256').hexdigest()
+                manifest['files'][path.name]={'sha256':checksum,'bytes':path.stat().st_size}
+        (target/'manifest.json').write_text(json.dumps(manifest,indent=2))
+        completed=True
+    except Exception as error:
+        failures.append(('snapshot',error))
+    finally:
+        failures.extend(restore_components(instance,running_gateway,running_bridge))
+    if failures: raise BackupError(completed,failures)
+    return {'user':instance.slug,'backup':str(target),'complete':completed,'credentials_included':True}
+
+
+def interrupted(signum, frame):
+    # The receiver allows a grace period for the active snapshot's finally.
+    raise RuntimeError('Backup interrupted; restoring previous service activity')
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    group=parser.add_mutually_exclusive_group()
+    group.add_argument('--user',default='personal')
+    group.add_argument('--all',action='store_true')
+    parser.add_argument('--lock-fd',type=int,help=argparse.SUPPRESS)
+    args=parser.parse_args()
+    if os.geteuid()!=0: raise SystemExit('Run as the authorized server administrator')
+    os.umask(0o077)
+    signal.signal(signal.SIGTERM, interrupted)
+    registry=ROOT/'private/tenants.json'
+    if registry.exists(): instances={key:Instance(**row['spec']) for key,row in json.loads(registry.read_text())['instances'].items()}
+    else:
+        from sally_whatsapp.config import Settings
+        settings=Settings.load('/etc/whatsapp-personal/config.toml')
+        instances={'personal':Instance('personal','GAL1LEO',settings.owner_subject,8820)}
+    selected=list(instances.values()) if args.all else [instances[args.user]]
+    import fcntl
+    lock_path=ROOT/'private/tenant-admin.lock'
+    if args.lock_fd is not None:
+        # Inherit the receiver's lock, retaining it across backup and activation.
+        # An arbitrary descriptor must never bypass tenant administration locking.
+        supplied=os.fstat(args.lock_fd)
+        expected=lock_path.stat()
+        if (supplied.st_dev,supplied.st_ino)!=(expected.st_dev,expected.st_ino):
+            raise RuntimeError('Invalid inherited tenant administration lock')
+        lock=os.fdopen(os.dup(args.lock_fd),'a')
+    else:
+        lock=lock_path.open('a')
+    with lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        for instance in selected: print(json.dumps(backup(instance)),flush=True)
+
+
+if __name__=='__main__': main()

@@ -1,0 +1,38 @@
+{
+  "host": "0.0.0.0",
+  "port": 8443,
+  "log_level": "warn",
+  "json_log_enable": true,
+  "namespace": "tesla",
+  "transmit_decoded_records": true,
+  "rate_limit": {
+    "enabled": true,
+    "message_interval_time": 30,
+    "message_limit": 1000
+  },
+  "reliable_ack_sources": {
+    "V": "kafka",
+    "alerts": "kafka"
+  },
+  "records": {
+    "V": [
+      "kafka"
+    ],
+    "alerts": [
+      "kafka"
+    ],
+    "connectivity": [
+      "kafka"
+    ]
+  },
+  "kafka": {
+    "bootstrap.servers": "127.0.0.1:9092",
+    "acks": "all",
+    "enable.idempotence": true,
+    "partitioner": "murmur2_random"
+  },
+  "tls": {
+    "server_cert": "/etc/tesla-telemetry/server-chain.crt",
+    "server_key": "/etc/tesla-telemetry/private/server.key"
+  }
+}

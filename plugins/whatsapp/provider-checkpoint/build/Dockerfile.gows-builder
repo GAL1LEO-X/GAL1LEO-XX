@@ -1,0 +1,17 @@
+FROM golang@sha256:b305420a68d0f229d91eb3b3ed9e519fcf2cf5461da4bef997bf927e8c0bfd2b
+
+# Optional environment-specific public CA; never copy credentials into the context.
+RUN --mount=type=secret,id=proxy_ca,target=/usr/local/share/ca-certificates/checkpoint-proxy.crt update-ca-certificates
+
+# Snapshot URLs fix native dependency resolution; no tool is installed on the host.
+RUN printf 'Types: deb\nURIs: https://snapshot.debian.org/archive/debian/20260623T000000Z\nSuites: bookworm bookworm-updates\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nCheck-Valid-Until: no\n\nTypes: deb\nURIs: https://snapshot.debian.org/archive/debian-security/20260623T000000Z\nSuites: bookworm-security\nComponents: main\nSigned-By: /usr/share/keyrings/debian-archive-keyring.gpg\nCheck-Valid-Until: no\n' > /etc/apt/sources.list.d/debian.sources \
+ && apt-get update \
+ && apt-get install --no-install-recommends -y protobuf-compiler libvips-dev pkg-config \
+ && rm -rf /var/lib/apt/lists/*
+
+ENV GOTOOLCHAIN=local
+RUN go install google.golang.org/protobuf/cmd/protoc-gen-go@v1.36.12 \
+ && go install google.golang.org/grpc/cmd/protoc-gen-go-grpc@v1.5.1
+
+ENV CGO_ENABLED=1 GOOS=linux GOARCH=amd64 TZ=UTC LC_ALL=C
+WORKDIR /work

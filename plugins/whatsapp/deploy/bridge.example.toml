@@ -1,0 +1,30 @@
+# Deployment template; placeholders must be configured before activation.
+[bridge]
+database = "/var/lib/whatsapp-personal/archive.sqlite"
+public_url = "https://whatsapp.example.invalid"
+issuer = "https://YOUR-OAUTH-ISSUER.example"
+jwks_url = "https://YOUR-OAUTH-ISSUER.example/.well-known/jwks.json"
+owner_subject = "REPLACE_WITH_EXACT_OAUTH_SUBJECT"
+oauth_client_ids = ["whatsapp-personal-chatgpt"]
+webhook_secret_file = "/etc/whatsapp-personal/webhook.key"
+encryption_key_file = "/etc/whatsapp-personal/encryption.key"
+waha_key_file = "/etc/whatsapp-personal/waha.key"
+waha_url = "http://127.0.0.1:8821"
+session = "default"
+live_account_enabled = false
+send_enabled = false
+send_chat_ids = []
+allow_all_destinations = false
+account_actions_enabled = false
+# Fill with the EXACT callback host supplied by ChatGPT during the synthetic test.
+callback_hosts = []
+allowed_hosts = ["whatsapp.example.invalid", "127.0.0.1:8820"]
+subscription_ttl = 86400
+max_callback_attempts = 8
+poll_seconds = 60
+max_attachment_bytes = 536870912
+media_cache_bytes = 4294967296
+media_ttl_seconds = 3600
+media_gateway_origin = "http://10.0.2.2:8820"
+event_max_age_seconds = 86400
+

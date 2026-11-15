@@ -1,0 +1,12 @@
+{
+  "slug": "personal",
+  "display_name": "Example Owner",
+  "subject": "REPLACE_WITH_EXACT_OWNER_SUB",
+  "bridge_port": 19001,
+  "public_hostname": "messages.example.org",
+  "issuer": "https://identity.example.net/realm",
+  "jwks_url": "https://identity.example.net/realm/jwks",
+  "auth_mode": "external-oidc",
+  "oauth_client_id": "registered-mcp-client",
+  "pairing_client_id": "registered-pairing-client"
+}

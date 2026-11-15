@@ -1,0 +1,18 @@
+GAL1LEO vehicle-command HTTP adapter, 2026.
+Local additions are licensed under Apache-2.0.
+Contains a patch to Tesla, Inc. vehicle-command, licensed under Apache-2.0.
+Upstream repository: https://github.com/teslamotors/vehicle-command
+Exact upstream revision: fc5a1910ad45c42921d541089e3e366d0b897f52
+Changes: four HTTP mappings to existing public SDK helpers and seven isolated
+typed command extensions; strict validation, local version/capability endpoint,
+prohibition of REST fallback for all eleven mappings.
+The seven message contracts in gal1leo_commands.proto are a minimal adapted
+subset of Teslemetry/tesla-protocol, copyright 2026 Teslemetry, Apache-2.0,
+revision 452c0ddd10c77e09c97f9acf4d3cc7e833cc802b. The original NOTICE is retained
+as TESLEMETRY-NOTICE.txt. Message names/package are local; wire field numbers
+and scalar types are preserved. gal1leo_commands.pb.go is generated from this
+subset. No Teslemetry runtime or transitive Node/Python dependencies are used.
+Official SDK protobuf files, cryptography, tokens, sessions and helpers are
+unchanged. The added vehicle helpers use official Vehicle.Send and its signing.
+See GAL1LEO-provenance.json for source/codegen pins and limitations.
+This adapter is maintained by GAL1LEO; it is not an official Tesla release.

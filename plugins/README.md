@@ -1,5 +1,7 @@
 # Plugins
 
-Place each public project in `plugins/<project-name>/`.
+- [Tesla](tesla/README.md): Fleet API, owner dashboard and observed telemetry.
+- [WhatsApp](whatsapp/README.md): searchable archive and MCP messaging bridge.
 
-Before publishing its code, include instructions and tests and select a license for the project.
+Developer: GAL1LEO — info@gal1leo.com. Original code: Apache-2.0.
+Each project includes source, tests, configuration examples and English skills.

@@ -1,0 +1,39 @@
+{
+  "schema": 1,
+  "id": "tesla",
+  "version_file": "VERSION",
+  "requirements": "requirements-test.lock",
+  "project": "pyproject.toml",
+  "editable": true,
+  "browser": true,
+  "venvs": {
+    "3.13": ".venvs/tesla",
+    "3.14": ".venvs/tesla-3.14"
+  },
+  "checks": {
+    "quick": [
+      [
+        "{python}",
+        "-m",
+        "pytest",
+        "{plugin}/tests",
+        "-q",
+        "-m",
+        "not integration"
+      ]
+    ],
+    "full": [
+      [
+        "{python}",
+        "-m",
+        "pytest",
+        "{plugin}/tests",
+        "-q"
+      ]
+    ]
+  },
+  "build": [
+    "{python}",
+    "{plugin}/build.py"
+  ]
+}

@@ -1,0 +1,110 @@
+[
+  {
+    "name": "sample.docx",
+    "mime": "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    "size": 889,
+    "sha256": "43a8147496170855ca2809059a13df68f80f281b1f651b9a0ddde667985ad85e"
+  },
+  {
+    "name": "sample.jpg",
+    "mime": "image/jpeg",
+    "size": 209,
+    "sha256": "d950b2c75bed1dc9e0dd8dbfae9e1ce347c819cd0111d12740cb6752f5da01f7",
+    "streams": [
+      {
+        "codec_name": "mjpeg",
+        "codec_type": "video",
+        "width": 16,
+        "height": 16
+      }
+    ]
+  },
+  {
+    "name": "sample.mp4",
+    "mime": "video/mp4",
+    "size": 4242,
+    "sha256": "e2f6c9a3eb5e63cdfc96e31c63c01cfd38042ab9e497a0154f003536b7b8ff05",
+    "streams": [
+      {
+        "codec_name": "h264",
+        "codec_type": "video",
+        "width": 16,
+        "height": 16
+      },
+      {
+        "codec_name": "aac",
+        "codec_type": "audio",
+        "sample_rate": "48000",
+        "channels": 1
+      }
+    ]
+  },
+  {
+    "name": "sample.ogg",
+    "mime": "audio/ogg; codecs=opus",
+    "size": 2649,
+    "sha256": "efc8bb1047fbf6aa6d731292bb7283fe92d2d294d0a1d90bae3cdaef9f44b3fa",
+    "streams": [
+      {
+        "codec_name": "opus",
+        "codec_type": "audio",
+        "sample_rate": "48000",
+        "channels": 1
+      }
+    ]
+  },
+  {
+    "name": "sample.pdf",
+    "mime": "application/pdf",
+    "size": 414,
+    "sha256": "680cde6bcc0a32b813f26deb4a36272a1f86f6e32b88114dde48945602e58231"
+  },
+  {
+    "name": "sample.png",
+    "mime": "image/png",
+    "size": 79,
+    "sha256": "3ad8cb79741173f5b4f98029ac46493fb2690323a2cc34921ac279d0ba57db6d",
+    "streams": [
+      {
+        "codec_name": "png",
+        "codec_type": "video",
+        "width": 16,
+        "height": 16
+      }
+    ]
+  },
+  {
+    "name": "sample.txt",
+    "mime": "text/plain",
+    "size": 44,
+    "sha256": "b8fd34b50ab6a9ec4845c67b19c198033cfa2e1a32235ab778bddbdb61fada51"
+  },
+  {
+    "name": "sample.wav",
+    "mime": "audio/wav",
+    "size": 19278,
+    "sha256": "05e3458e2f153d6ea73776b44d156512b4e5f3b3a97d43adc68294c1015be802",
+    "streams": [
+      {
+        "codec_name": "pcm_s16le",
+        "codec_type": "audio",
+        "sample_rate": "48000",
+        "channels": 1
+      }
+    ]
+  },
+  {
+    "name": "sample.webp",
+    "mime": "image/webp",
+    "size": 66,
+    "sha256": "27315545f3032646f18c2b71d9cb985abe5fd5c85fcbfa68363e789a2708d9be",
+    "streams": [
+      {
+        "codec_name": "webp",
+        "codec_type": "video",
+        "width": 16,
+        "height": 16
+      }
+    ]
+  }
+]

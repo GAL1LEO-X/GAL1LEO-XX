@@ -1,0 +1,21 @@
+[Unit]
+Description=Official Tesla signed command proxy
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=tesla-command
+Group=tesla-command
+UMask=0077
+ExecStart=/opt/tesla-command/tesla-http-proxy -host localhost -port 4443 -key-file /etc/tesla-command/private/vehicle-private.pem -cert /etc/tesla-command/server-chain.crt -tls-key /etc/tesla-command/private/server.key
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+InaccessiblePaths=/etc/tesla-personal/private /var/lib/tesla-personal
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

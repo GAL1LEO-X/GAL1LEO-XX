@@ -1,0 +1,21 @@
+[Unit]
+Description=Official Tesla mTLS telemetry receiver
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=tesla-telemetry
+Group=tesla-telemetry
+UMask=0077
+ExecStart=/opt/tesla-telemetry/fleet-telemetry -config /etc/tesla-telemetry/receiver.json
+Restart=on-failure
+RestartSec=5
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+InaccessiblePaths=/etc/tesla-personal/private /var/lib/tesla-personal /etc/tesla-command/private
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

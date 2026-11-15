@@ -1,0 +1,8 @@
+{
+  "name": "develative-host-frontend",
+  "version": "0.1.0",
+  "owner": "host",
+  "source": "host/frontend",
+  "distribution": "GAL1LEO-X/GAL1LEO-XX",
+  "application_lifecycle": "retain"
+}

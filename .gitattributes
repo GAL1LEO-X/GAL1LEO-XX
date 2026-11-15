@@ -1,0 +1,10 @@
+* text=auto eol=lf
+*.png -text
+*.jpg -text
+*.webp -text
+*.mp4 -text
+*.ogg -text
+*.wav -text
+*.docx -text
+*.pdf -text
+*.patch -text

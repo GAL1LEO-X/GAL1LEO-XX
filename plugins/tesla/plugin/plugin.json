@@ -1,0 +1,30 @@
+{
+  "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
+  "name": "tesla-personal",
+  "version": "1.0.4",
+  "description": "Self-hosted Tesla Fleet API connection, confirmed commands and observed telemetry.",
+  "author": {
+    "name": "GAL1LEO",
+    "email": "info@gal1leo.com"
+  },
+  "repository": "https://github.com/GAL1LEO-X/GAL1LEO-XX",
+  "extensions": {
+    "com.openai": {
+      "interface": {
+        "displayName": "TESLA",
+        "shortDescription": "Your Tesla in ChatGPT",
+        "longDescription": "Read Tesla state and history. Manage data collection, frequencies, cost estimates and events in the panel or ChatGPT. Execute commands and wake requests explicitly, including by voice; events never trigger automatic vehicle commands.",
+        "developerName": "GAL1LEO",
+        "category": "Productivity",
+        "capabilities": [
+          "Read",
+          "Write"
+        ],
+        "logo": "./assets/icon.png",
+        "composerIcon": "./assets/icon.png",
+        "defaultPrompt": "Show my Tesla state and when the data was observed."
+      }
+    }
+  },
+  "license": "Apache-2.0"
+}

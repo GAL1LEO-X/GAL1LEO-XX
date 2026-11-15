@@ -1,0 +1,21 @@
+[Unit]
+Description=WhatsApp priority using BOX egress classes and proportional I/O
+Requires=box-network-priority.service
+After=box-network-priority.service network-online.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/python3 /srv/openai-codex/projects/whatsapp-personal/scripts/resource_priority.py apply --apply
+ExecReload=/usr/bin/python3 /srv/openai-codex/projects/whatsapp-personal/scripts/resource_priority.py apply --apply
+TimeoutStartSec=30
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectHome=yes
+ProtectSystem=strict
+ReadWritePaths=/sys/fs/cgroup/io.cost.qos /run/lock
+ProtectKernelModules=yes
+RestrictAddressFamilies=AF_UNIX AF_NETLINK AF_INET AF_INET6
+
+[Install]
+WantedBy=multi-user.target

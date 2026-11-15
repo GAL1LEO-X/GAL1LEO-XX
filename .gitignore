@@ -1,0 +1,34 @@
+work/
+outputs/
+.venvs/
+.venv/
+node_modules/
+playwright-report/
+test-results/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+*.egg-info/
+build/
+dist/
+.env
+.env.*
+!.env.example
+private/
+secrets/
+state/
+*.sqlite*
+*.db
+*.key
+*.pem
+config.toml
+identity.json
+tenants.json
+
+
+# Operator-specific verified release policy; not a ready public artifact channel.
+tools/whatsapp-release-provider.lock.json
+
+# Provider build recipes are source, not generated Python build output.
+!plugins/whatsapp/provider-checkpoint/build/
+!plugins/whatsapp/provider-checkpoint/build/**

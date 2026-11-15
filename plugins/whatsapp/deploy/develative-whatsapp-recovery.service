@@ -1,0 +1,13 @@
+[Unit]
+Description=Recover interrupted WhatsApp administration
+After=local-fs.target
+
+[Service]
+Type=oneshot
+RemainAfterExit=no
+Restart=no
+User=root
+UMask=0077
+ExecStart=/usr/bin/python3 -I -B /usr/local/lib/develative-deploy/whatsapp-bootstrap/release_entry.py recovery
+TimeoutStartSec=600
+KillMode=control-group

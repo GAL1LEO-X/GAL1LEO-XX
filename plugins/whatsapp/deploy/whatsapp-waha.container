@@ -1,0 +1,50 @@
+# Install as a rootless Quadlet for a dedicated whatsappbridge account AFTER review.
+# Requires a pre-created Podman secret whatsapp-waha-api-key.
+[Unit]
+Description=Persistent WAHA GOWS gateway for WhatsApp Personal
+Wants=network-online.target
+After=network-online.target
+
+[Container]
+Image=docker.io/devlikeapro/waha@sha256:1ae3c6a994ee97e5039bf41103193d7bf9175f1a31db73ba89bdeed6277901bc
+ContainerName=whatsapp-waha
+# Rootless private network. WAHA's hostname option does NOT restrict its listen address.
+Network=slirp4netns:allow_host_loopback=true
+PublishPort=127.0.0.1:8821:3000
+# Its webhook reaches the bridge at http://10.0.2.2:8820/webhooks/waha.
+Environment=WHATSAPP_API_HOSTNAME=127.0.0.1
+Environment=WHATSAPP_API_PORT=3000
+Environment=WHATSAPP_API_SCHEMA=http
+Environment=WAHA_BASE_URL=http://127.0.0.1:8821
+Environment=WHATSAPP_DEFAULT_ENGINE=GOWS
+Environment=WAHA_DASHBOARD_ENABLED=false
+Environment=WHATSAPP_SWAGGER_ENABLED=false
+Environment=WAHA_LOG_LEVEL=warn
+Environment=GOMAXPROCS=2
+Environment=UV_THREADPOOL_SIZE=4
+Environment=WHATSAPP_FILES_FOLDER=/app/.media
+Environment=WAHA_MEDIA_STORAGE=LOCAL
+Volume=/var/lib/whatsapp-personal-waha/sessions:/app/.sessions
+Volume=/var/lib/whatsapp-personal-waha/media:/app/.media
+Secret=whatsapp-waha-api-key,type=env,target=WHATSAPP_API_KEY
+Secret=whatsapp-waha-disabled-ui-key,type=env,target=WAHA_DASHBOARD_PASSWORD
+Secret=whatsapp-waha-disabled-ui-key,type=env,target=WHATSAPP_SWAGGER_PASSWORD
+NoNewPrivileges=true
+DropCapability=all
+
+[Service]
+Restart=on-failure
+RestartSec=15
+MemoryMax=4G
+CPUQuota=200%
+# Bound CPU discovery on this 128-core host to avoid native thread over-allocation.
+CPUAffinity=0-3
+CPUWeight=800
+IOWeight=800
+TasksMax=256
+TimeoutStartSec=300
+LimitCORE=0
+
+[Install]
+WantedBy=default.target
+

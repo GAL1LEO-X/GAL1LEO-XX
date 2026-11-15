@@ -1,0 +1,17 @@
+{
+  "schema_version": 1,
+  "purpose": "Native GOWS receipt-diagnostics provider build inputs; results recorded separately",
+  "candidate_provider_version": "0.8.4",
+  "base_runtime_config_digest": "sha256:d0fb209980f52f79ef4586c97c4d67a910183026fbcb61264e6bd437ffa97a10",
+  "gows_tree": "34534b8195b56e8783c3eaab1063785ea70d76e4",
+  "gows_patch_checkpoint": "qa136",
+  "compiler_image": "sha256:1a7ac3af3af212f23b6a5c90d68268bfb80824694c16a44dab57c1ca12a73bde",
+  "go_version": "1.26.4",
+  "waha_tree": "d7de58e17b7de854161e79e07ad9268ce8c8eb96",
+  "waha_compiled_files": 2066,
+  "waha_compilation_receipt": "QA132, c1cb30f7b45c91c3837d458e8e6409de151e5320",
+  "dependencies_changed": false,
+  "protobuf_changed": false,
+  "provider_lock_changed": false,
+  "results": "Separate build and qualification receipts; presence of recipe is not qualification"
+}

@@ -1,0 +1,54 @@
+// Copyright 2026 GAL1LEO. Licensed under the Apache License, Version 2.0.
+// Minimal wire-compatible subset of Teslemetry/tesla-protocol (Apache-2.0),
+// commit 452c0ddd10c77e09c97f9acf4d3cc7e833cc802b, car_server.proto.
+// Local namespace prevents descriptor collisions; no official SDK messages,
+// authentication, cryptography or session code are replaced. See NOTICE.txt.
+syntax = "proto3";
+package GAL1LEO;
+option go_package = "github.com/teslamotors/vehicle-command/pkg/protocol/protobuf/gal1leo";
+import "common.proto";
+
+message Action {
+  VehicleAction vehicle_action = 2;
+}
+
+message VehicleAction {
+  oneof action {
+    NavigationSuperchargerRequest navigation_supercharger = 22;
+    CalendarEntries calendar_entries = 24;
+    NavigationGpsRequest navigation_gps = 53;
+    Boombox boombox = 64;
+    AutoSteeringWheelHeat auto_steering_wheel_heat = 70;
+    SteeringWheelHeatLevel steering_wheel_heat_level = 71;
+    NavigationWaypointsRequest navigation_waypoints = 90;
+  }
+}
+
+enum TripOrder {
+  UNKNOWN = 0;
+  REPLACE = 1;
+  PREPEND = 2;
+  APPEND = 3;
+}
+
+message NavigationSuperchargerRequest {
+  int64 id = 1;
+  TripOrder order = 2;
+}
+message NavigationGpsRequest {
+  double lat = 1;
+  double lon = 2;
+  TripOrder order = 3;
+}
+message NavigationWaypointsRequest {
+  string waypoints = 1;
+  TripPlanOptions trip_plan_options = 2;
+  message TripPlanOptions {
+    int32 destination_start_soe = 1;
+    int32 destination_arrival_soe = 2;
+  }
+}
+message CalendarEntries { string calendar_data = 1; }
+message Boombox { uint32 sound = 1; }
+message AutoSteeringWheelHeat { bool on = 1; }
+message SteeringWheelHeatLevel { CarServer.StwHeatLevel level = 1; }

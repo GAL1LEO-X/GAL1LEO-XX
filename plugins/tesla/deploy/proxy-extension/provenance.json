@@ -1,0 +1,37 @@
+{
+  "schema": 1,
+  "official_sdk": {
+    "repository": "teslamotors/vehicle-command",
+    "commit": "fc5a1910ad45c42921d541089e3e366d0b897f52",
+    "license": "Apache-2.0",
+    "signing_sessions_replaced": false
+  },
+  "wire_contract": {
+    "repository": "Teslemetry/tesla-protocol",
+    "commit": "452c0ddd10c77e09c97f9acf4d3cc7e833cc802b",
+    "path": "proto/command/car_server.proto",
+    "sha256": "cce27c34918c8d54d07619f5431e0fd540afac7f4ba76e8733b046ddb4818e14",
+    "license": "Apache-2.0",
+    "license_sha256": "c95bae1d1ce0235ecccd3560b772ec1efb97f348a79f0fbe0a634f0c2ccefe2c",
+    "runtime_dependency_added": false,
+    "subset": "VehicleAction fields 22,24,53,64,70,71,90 and their typed payloads",
+    "sc_correction_commits": [
+      "7dec33b6e883377c98786f3f4b73198e8ecc5d4d",
+      "f1535e255a29c267f783e1a28e76a3d4fcd22003"
+    ],
+    "upstream_waypoints_review": "https://github.com/teslamotors/vehicle-command/pull/443",
+    "upstream_waypoints_pr_merged": false
+  },
+  "codegen": {
+    "compiler_image": "golang@sha256:820153096fda4de6ac1b7194d12e416b7dd8f4e9a33d17e0345b111b945162d8",
+    "protobuf_compiler_debian": "3.21.12-11+deb13u1",
+    "protoc": "3.21.12",
+    "protoc_sha256": "7730414b191c9363340457770c330a7cc00dbba4b6f4130b1293369b3454c27f",
+    "protoc_gen_go": "v1.34.2",
+    "protoc_gen_go_sha256": "6518e0e450503691f5a05f121bb7eed38a6facbb3397f98c656c0564b5aa8558",
+    "generated_sha256": "be11a4524c3f4b25616ea7b9b6ee6ec907676be177f8301e06c6799468354e1f"
+  },
+  "vehicle_tested": false,
+  "itinerary_preservation_verified": false,
+  "calendar_content_contract": "opaque string; encoding/rendering requires firmware qualification"
+}

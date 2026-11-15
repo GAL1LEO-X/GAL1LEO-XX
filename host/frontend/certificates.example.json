@@ -1,0 +1,32 @@
+{
+  "format": 1,
+  "account": "00000000000000000000000000000000",
+  "tools": {
+    "certbot": {
+      "path": "/usr/bin/certbot",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "systemd-run": {
+      "path": "/usr/bin/systemd-run",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    "systemctl": {
+      "path": "/usr/bin/systemctl",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  },
+  "lineages": {
+    "wa-owner.example.invalid": {
+      "consumer": "whatsapp.personal",
+      "webroot": "/var/www/whatsapp-personal-acme"
+    },
+    "wa-secondary.example.invalid": {
+      "consumer": "whatsapp.secondary",
+      "webroot": "/var/www/whatsapp-secondary-acme"
+    },
+    "auth.example.invalid": {
+      "consumer": "host.auth",
+      "webroot": "/var/www/authelia-acme"
+    }
+  }
+}

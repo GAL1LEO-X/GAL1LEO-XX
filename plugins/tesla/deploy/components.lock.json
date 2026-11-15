@@ -1,0 +1,35 @@
+{
+  "schema": 1,
+  "vehicle_command": {
+    "repository": "https://github.com/teslamotors/vehicle-command.git",
+    "commit": "fc5a1910ad45c42921d541089e3e366d0b897f52",
+    "extension": {
+      "protocol": "gal1leo-vehicle-command/2",
+      "sources_sha256": {
+        "proxy.patch": "38cf2bf4caab0f4e01f4f844e957c6af6c809c182edcd651806fc9cce976c1ac",
+        "gal1leo_extensions.go": "65abe6739cd1488134879a14796fff9ad78b2d7e2503529fd424d2a7f947358b",
+        "gal1leo_extensions_test.go": "311d46a140055345bd87651e5329a47a24098121ad534e5271ea1b5082da97bc",
+        "gal1leo_vehicle.go": "c3e2f326a1f354be780826b363abea2d33ad2407e96a563ebf5ab2b249d49b1c",
+        "gal1leo_vehicle_test.go": "3720b30203608910a3d6b58a597fa39c4f5b1a93ba55de500f698b58333a8e97",
+        "gal1leo_commands.proto": "b6a5d2b672fcbab5079463b82e4b464e3f47c1adab83b863252401972b0139cf",
+        "gal1leo_commands.pb.go": "be11a4524c3f4b25616ea7b9b6ee6ec907676be177f8301e06c6799468354e1f",
+        "LICENSE.txt": "8c6db340475136df3c1201d458fa5755698eace76e510471ecc9d857d6083dac",
+        "NOTICE.txt": "c1b0ebe1bcc1793b843de1a64026224298bfa741e56a85851c04f6b638691536",
+        "TESLEMETRY-NOTICE.txt": "84703edd21564860871f0008113d004a83858cb88c5186ab9d39bdc171a5d083",
+        "provenance.json": "106c65d9f6acbc872253a899a0aabe7126b1842b194194b8863e89f43bb3fe79"
+      }
+    }
+  },
+  "fleet_telemetry": {
+    "repository": "https://github.com/teslamotors/fleet-telemetry.git",
+    "commit": "bd076fe1494841707528449560c4a19d0d426da4"
+  },
+  "go_build_image": "golang@sha256:820153096fda4de6ac1b7194d12e416b7dd8f4e9a33d17e0345b111b945162d8",
+  "go_version": "go1.27.2",
+  "fleet_telemetry_build_image": "golang@sha256:5cf287a799e6b94384bad13d16b14904c531f51ba65792237e122ce42b392f61",
+  "vehicle_command_runtime": "gcr.io/distroless/static-debian12:nonroot@sha256:afa5c872c891853ca7fcf1f12c3edb23f7eeef36189728842dd51042ff57f7ab",
+  "fleet_telemetry_runtime": "gcr.io/distroless/cc-debian12:nonroot@sha256:9dac0a79194e45a7da0158a9c6da57b217585af0786db3845d1f0ec1a0dd182f",
+  "fleet_telemetry_official_image": "tesla/fleet-telemetry:v0.9.5@sha256:7cb5f429210128b8edc5aac1e403589315893106f4c5a3ff85cb32213e2f8e37",
+  "kafka_image": "apache/kafka:4.1.1@sha256:0bc1bb2478f45b6cea78864df86acdc11e8df2c5172477819a4d12942cbe5d40",
+  "platform": "linux/amd64"
+}

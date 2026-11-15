@@ -1,0 +1,30 @@
+[build-system]
+requires = ["setuptools==84.0.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "gal1leo-tesla"
+version = "1.0.4"
+description = "Self-hosted Tesla Fleet API and MCP integration"
+requires-python = ">=3.13"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"]
+authors = [{name = "GAL1LEO", email = "info@gal1leo.com"}]
+dependencies = ["mcp==2.3.0", "PyJWT==2.15.1", "cryptography==50.0.2", "httpx==0.28.1", "uvicorn==0.54.0", "jsonschema==4.26.0", "kafka-python==3.0.11"]
+
+[project.scripts]
+tesla-plugin = "tesla_plugin.cli:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+tesla_plugin = ["data/*.json", "assets/*.html", "assets/*.css", "assets/*.js", "assets/*.png"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["integration: synthetic HTTP or process integration"]
+
+[project.urls]
+Repository = "https://github.com/GAL1LEO-X/GAL1LEO-XX"
+Documentation = "https://github.com/GAL1LEO-X/GAL1LEO-XX/tree/main/plugins/tesla"

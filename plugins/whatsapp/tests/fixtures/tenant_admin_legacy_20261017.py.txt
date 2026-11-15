@@ -1,0 +1,397 @@
+"""Root-only, repeatable administration of isolated WhatsApp users on Develative.
+
+Actions default to a printed plan; writes need --apply. No WhatsApp logout/delete
+or outbound messages are implemented here. Credentials stay in private storage.
+"""
+import argparse
+from contextlib import contextmanager
+from datetime import datetime,UTC
+import hashlib
+import io
+import json
+import os
+from pathlib import Path
+import re
+import secrets
+import shutil
+import socket
+import sqlite3
+import subprocess
+import sys
+import tarfile
+import time
+import tomllib
+import uuid
+
+import httpx
+from cryptography.fernet import Fernet
+from sally_whatsapp.tenancy import Instance,ROOT,ISSUER,idp_candidate,render_config,render_apache,render_bridge_unit,render_quadlet
+from sally_whatsapp.account_events import EVENT_TYPES
+
+REGISTRY=ROOT/'private/tenants.json'
+AUTH_CONFIG=Path('/var/lib/sally-browser/stack/config')
+AUTH_DATABASE=Path('/var/lib/sally-browser/stack/authelia/db.sqlite3')
+AUTH_WRAPPER='/srv/openai-codex/projects/sally-browser/bin/as-user'
+
+
+def phase(name,**data):
+    print(json.dumps({'phase':name,**data},ensure_ascii=False),flush=True)
+
+
+def run(args,**kwargs):
+    result=subprocess.run([str(v) for v in args],capture_output=True,**kwargs)
+    if result.returncode:
+        # Provider logs can contain credentials; do not print stdout/stderr on failure.
+        output=result.stdout+result.stderr
+        write_private(ROOT/'private/tenant-command-failure.log',output)
+        raise RuntimeError('Command failed: '+Path(str(args[0])).name+'; inspect private diagnostic receipt')
+    return result
+
+
+def write_private(path,data,*,mode=0o600,uid=0,gid=0):
+    path.parent.mkdir(parents=True,exist_ok=True)
+    temporary=path.with_name(path.name+'.candidate-'+secrets.token_hex(4))
+    temporary.write_bytes(data.encode() if isinstance(data,str) else data)
+    os.chmod(temporary,mode)
+    os.chown(temporary,uid,gid)
+    os.replace(temporary,path)
+
+
+def registry():
+    if REGISTRY.exists(): return json.loads(REGISTRY.read_text())
+    cfg=tomllib.loads(Path('/etc/whatsapp-personal/config.toml').read_text())['bridge']
+    original=Instance('personal','GAL1LEO',cfg['owner_subject'],8820)
+    if cfg['public_url']!=original.public_url or cfg['waha_url']!='http://127.0.0.1:8821':
+        raise ValueError('Existing instance does not match the known deployment')
+    return {'format':1,'instances':{'personal':{'spec':original.record(),'phase':'existing','enabled':True}}}
+
+
+def save_registry(data):
+    write_private(REGISTRY,json.dumps(data,indent=2))
+
+
+def stamp(): return datetime.now(UTC).strftime('%Y%m%dT%H%M%S%fZ')
+
+
+def auth_backup(label):
+    target=Path('/var/backups/whatsapp-personal')/(label+'-'+stamp())
+    target.mkdir(parents=True,mode=0o700)
+    for name in ('authelia.yml','users.yml'): shutil.copy2(AUTH_CONFIG/name,target/name)
+    with sqlite3.connect('file:'+str(AUTH_DATABASE)+'?mode=ro',uri=True) as source,sqlite3.connect(target/'authelia.sqlite3') as dest:
+        source.backup(dest)
+        if dest.execute('PRAGMA integrity_check').fetchone()[0]!='ok': raise RuntimeError('Auth snapshot failed')
+    return target
+
+
+def install_auth(instance,identity=None):
+    import pwd
+    old_config=(AUTH_CONFIG/'authelia.yml').read_bytes()
+    old_users=(AUTH_CONFIG/'users.yml').read_bytes()
+    cfg,users=idp_candidate(json.loads(old_config),json.loads(old_users),instance,identity)
+    candidate=json.dumps(cfg,indent=2).encode()
+    user_data=json.dumps(users,indent=2).encode()
+    if json.loads(old_config)==cfg and json.loads(old_users)==users:
+        return
+    backup=auth_backup('before-user-'+instance.slug)
+    write_private(instance.private_dir/'auth-backup.txt',str(backup))
+    account=pwd.getpwnam('sallybrowser')
+    staging=Path(account.pw_dir)/('whatsapp-auth-candidate-'+secrets.token_hex(8)+'.json')
+    write_private(staging,candidate,uid=account.pw_uid,gid=account.pw_gid)
+    try:
+        run([AUTH_WRAPPER,'podman','cp',staging,'sally-auth:/tmp/whatsapp-auth-candidate.json'])
+        check=subprocess.run([AUTH_WRAPPER,'podman','exec','sally-auth','authelia','validate-config','--config','/tmp/whatsapp-auth-candidate.json'],capture_output=True)
+        write_private(instance.private_dir/'auth-validation.log',check.stdout+check.stderr)
+        if check.returncode: raise RuntimeError('Authelia candidate rejected; current configuration preserved')
+    finally:
+        staging.unlink(missing_ok=True)
+    stats={name:(AUTH_CONFIG/name).stat() for name in ('authelia.yml','users.yml')}
+    for name,data in (('authelia.yml',candidate),('users.yml',user_data)):
+        s=stats[name]
+        write_private(AUTH_CONFIG/name,data,mode=s.st_mode&0o777,uid=s.st_uid,gid=s.st_gid)
+    try:
+        run([AUTH_WRAPPER,'systemctl','--user','restart','sally-auth.service'])
+        with httpx.Client(timeout=3,follow_redirects=False,trust_env=False) as client:
+            for _ in range(20):
+                try:
+                    response=client.get(ISSUER+'/.well-known/openid-configuration')
+                    if response.is_success and response.json().get('issuer')==ISSUER: break
+                except (httpx.HTTPError,ValueError): pass
+                time.sleep(1)
+            else: raise RuntimeError('Authentication discovery did not recover')
+    except Exception:
+        for name,data in (('authelia.yml',old_config),('users.yml',old_users)):
+            s=stats[name]
+            write_private(AUTH_CONFIG/name,data,mode=s.st_mode&0o777,uid=s.st_uid,gid=s.st_gid)
+        run([AUTH_WRAPPER,'systemctl','--user','restart','sally-auth.service'])
+        raise
+    phase('authentication_configured',user=instance.slug,backup=str(backup))
+
+
+def identity_for(instance):
+    path=instance.private_dir/'identity.json'
+    if path.exists():
+        identity=json.loads(path.read_text())
+        if identity['username']!=instance.username or identity['subject']!=instance.subject:
+            raise ValueError('Managed identity mismatch')
+        return identity
+    existing=json.loads((AUTH_CONFIG/'users.yml').read_text())['users']
+    if instance.username in existing: raise ValueError('Identity exists outside the managed registry; refusing adoption')
+    answer=run([AUTH_WRAPPER,'podman','exec','sally-auth','authelia','crypto','hash','generate','argon2','--random','--random.length','40'],text=True)
+    password=re.search(r'^Random Password: (.+)$',answer.stdout,re.M)
+    password_hash=re.search(r'^Digest: (.+)$',answer.stdout,re.M)
+    if not password or not password_hash: raise RuntimeError('Credential generator output unrecognized')
+    identity={'username':instance.username,'subject':instance.subject,'display_name':instance.display_name,
+              'password':password.group(1),'password_hash':password_hash.group(1)}
+    write_private(path,json.dumps(identity,indent=2))
+    return identity
+
+
+def register_subject(instance):
+    receipt=instance.private_dir/'subject-registered.json'
+    if receipt.exists(): return
+    # Use the provider CLI, not a direct write to its internal database.
+    result=subprocess.run([AUTH_WRAPPER,'podman','exec','sally-auth','authelia','storage','user','identifiers','add',instance.username,
+                           '--identifier',instance.subject,'--config','/config/configuration.yml'],capture_output=True)
+    write_private(instance.private_dir/'subject-registration.log',result.stdout+result.stderr)
+    if result.returncode: raise RuntimeError('Subject registration needs inspection; no identifier overwritten')
+    write_private(receipt,json.dumps({'registered':True,'subject':instance.subject}))
+
+
+def directory(path,uid,gid,mode=0o700):
+    path.mkdir(parents=True,exist_ok=True)
+    os.chown(path,uid,gid)
+    os.chmod(path,mode)
+
+
+def prepare_runtime(instance):
+    import pwd
+    try: account=pwd.getpwnam(instance.service_user)
+    except KeyError:
+        run(['useradd','--system','--create-home','--home-dir',instance.gateway_home,'--shell','/usr/sbin/nologin',instance.service_user])
+        account=pwd.getpwnam(instance.service_user)
+    if account.pw_dir!=str(instance.gateway_home) or account.pw_shell!='/usr/sbin/nologin':
+        raise ValueError('Service user belongs to an unexpected runtime')
+    uid,gid=account.pw_uid,account.pw_gid
+    for filename,flag in (('/etc/subuid','--add-subuids'),('/etc/subgid','--add-subgids')):
+        entries=[line.split(':') for line in Path(filename).read_text().splitlines() if line]
+        if not any(row[0]==instance.service_user for row in entries):
+            start=max([100000]+[int(row[1])+int(row[2]) for row in entries])
+            run(['usermod',flag,f'{start}-{start+65535}',instance.service_user])
+    run(['setfacl','-m',f'u:{instance.service_user}:--x','/srv/openai-codex','/srv/openai-codex/projects'])
+    run(['setfacl','-m',f'u:{instance.service_user}:r-x',ROOT])
+    directory(instance.config_dir,0,gid,0o750)
+    for path in (instance.state_dir,instance.gateway_home,instance.gateway_home/'sessions',instance.gateway_home/'media',
+                 instance.gateway_home/'.config',instance.gateway_home/'.config/containers',instance.gateway_home/'.config/containers/systemd'):
+        directory(path,uid,gid)
+    for name in ('webhook.key','encryption.key','waha.key'):
+        path=instance.config_dir/name
+        if not path.exists():
+            write_private(path,Fernet.generate_key() if name=='encryption.key' else secrets.token_hex(32),mode=0o640,gid=gid)
+    discovery=httpx.get(ISSUER+'/.well-known/openid-configuration',timeout=10).json()
+    config=render_config(instance,authorize_url=discovery['authorization_endpoint'],token_url=discovery['token_endpoint'])
+    if not (instance.config_dir/'config.toml').exists():
+        write_private(instance.config_dir/'config.toml',config,mode=0o640,gid=gid)
+    write_private(instance.wrapper,f'#!/bin/sh\nset -eu\ncd {instance.gateway_home}\nexec runuser -u {instance.service_user} -- env HOME={instance.gateway_home} XDG_RUNTIME_DIR=/run/user/{uid} DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus "$@"\n',mode=0o700)
+    write_private(Path('/etc/systemd/system')/(instance.base+'.service'),render_bridge_unit(instance),mode=0o644)
+    write_private(instance.gateway_home/'.config/containers/systemd/whatsapp-waha.container',render_quadlet(instance),uid=uid,gid=gid)
+    run([sys.executable,ROOT/'scripts/resource_priority.py','enroll','--user',instance.service_user,'--apply'])
+    run(['loginctl','enable-linger',instance.service_user])
+    run(['systemctl','start',f'user@{uid}.service'])
+    for name,source in (('whatsapp-waha-api-key',instance.config_dir/'waha.key'),('whatsapp-waha-disabled-ui-key',None)):
+        exists=subprocess.run([str(instance.wrapper),'podman','secret','inspect',name],capture_output=True).returncode==0
+        if not exists:
+            data=source.read_bytes() if source else secrets.token_hex(32).encode()
+            run([instance.wrapper,'podman','secret','create',name,'-'],input=data)
+    run(['systemctl','daemon-reload'])
+    run([instance.wrapper,'systemctl','--user','daemon-reload'])
+    phase('isolated_runtime_prepared',user=instance.slug,service_user=instance.service_user)
+
+
+def install_https(instance):
+    # Only create the exact assigned hostname; no wildcard, shared vhost or DNS replacement.
+    ip=socket.gethostbyname('whatsapp.example.invalid')
+    expected=subprocess.run(['dig','@127.0.0.1',instance.hostname,'A','+short'],capture_output=True,text=True).stdout.split()
+    if expected and expected!=[ip]: raise ValueError('Assigned hostname has a different DNS target')
+    if not expected:
+        run(['virtualmin','modify-dns','--domain','example.invalid','--add-record',instance.hostname+'. A '+ip])
+    webroot='/var/www/whatsapp-personal-acme'
+    http_conf=Path('/etc/apache2/sites-available')/(instance.base+'-http.conf')
+    if not http_conf.exists():
+        text=fr'''<VirtualHost *:80>
+    ServerName {instance.hostname}
+    DocumentRoot {webroot}
+    <Directory {webroot}>
+        Options -Indexes
+        Require all granted
+    </Directory>
+    RewriteEngine On
+    RewriteCond %{{REQUEST_URI}} !^/\.well-known/acme-challenge/
+    RewriteRule ^ https://{instance.hostname}%{{REQUEST_URI}} [R=301,L]
+</VirtualHost>
+'''
+        write_private(http_conf,text,mode=0o644)
+    run(['a2ensite',http_conf.name])
+    run(['apache2ctl','configtest'])
+    run(['systemctl','reload','apache2'])
+    for _ in range(30):
+        answers=subprocess.run(['dig','@1.1.1.1',instance.hostname,'A','+short'],capture_output=True,text=True).stdout.split()
+        if answers==[ip]: break
+        time.sleep(2)
+    else: raise RuntimeError('Public DNS not propagated yet; rerun add later')
+    certificate=Path('/etc/letsencrypt/live')/instance.hostname/'fullchain.pem'
+    if not certificate.exists():
+        phase('certificate_requested',hostname=instance.hostname)
+        result=subprocess.run(['certbot','certonly','--non-interactive','--webroot','-w',webroot,'-d',instance.hostname],capture_output=True)
+        write_private(instance.private_dir/'certificate.log',result.stdout+result.stderr)
+        if result.returncode: raise RuntimeError('Certificate issuance did not complete; see private certificate.log')
+    https_conf=Path('/etc/apache2/sites-available')/(instance.base+'-https.conf')
+    write_private(https_conf,render_apache(instance),mode=0o644)
+    run(['a2ensite',https_conf.name])
+    run(['apache2ctl','configtest'])
+    run(['systemctl','reload','apache2'])
+    phase('https_ready',hostname=instance.hostname)
+
+
+def start_runtime(instance):
+    run([instance.wrapper,'systemctl','--user','start','whatsapp-waha.service'])
+    key=(instance.config_dir/'waha.key').read_text().strip()
+    with httpx.Client(base_url=f'http://127.0.0.1:{instance.gateway_port}',headers={'X-Api-Key':key},timeout=4,trust_env=False) as client:
+        for _ in range(40):
+            try:
+                if client.get('/api/version').is_success: break
+            except httpx.HTTPError: pass
+            time.sleep(1)
+        else: raise RuntimeError('New gateway did not become ready')
+        response=client.get('/api/sessions',params={'all':'true'})
+        response.raise_for_status()
+        sessions=response.json()
+        if not any(s.get('name')=='default' for s in sessions):
+            response=client.post('/api/sessions',json={'name':'default','start':False,'config':{
+                'debug':False,'gows':{'storage':{'messages':True,'groups':True,'chats':True,'contacts':True}},
+                'webhooks':[{'url':f'http://10.0.2.2:{instance.bridge_port}/webhooks/waha','events':['message.any',*EVENT_TYPES],
+                             'hmac':{'key':(instance.config_dir/'webhook.key').read_text().strip()},
+                             'retries':{'delaySeconds':2,'attempts':15,'policy':'linear'}}]}})
+            if not response.is_success: raise RuntimeError('New session configuration was rejected')
+    run(['systemctl','enable','--now',instance.base+'.service'])
+    phase('new_user_ready_for_human_linking',**instance.public_details())
+
+
+def enable_existing_link(instance):
+    install_auth(instance)
+    path=instance.config_dir/'config.toml'
+    original=path.read_text()
+    discovery=httpx.get(ISSUER+'/.well-known/openid-configuration',timeout=10).json()
+    updates={'listen_port':instance.bridge_port,'link_enabled':True,'link_client_id':instance.link_client,
+             'link_authorize_url':discovery['authorization_endpoint'],'link_token_url':discovery['token_endpoint'],
+             'oauth_client_ids':[instance.chatgpt_client]}
+    for key,value in updates.items():
+        line=key+' = '+json.dumps(value)
+        pattern=r'^'+re.escape(key)+r'\s*=.*$'
+        original=re.sub(pattern,line,original,flags=re.M) if re.search(pattern,original,re.M) else original+'\n'+line+'\n'
+    stat=path.stat()
+    write_private(path,original,mode=stat.st_mode&0o777,uid=stat.st_uid,gid=stat.st_gid)
+    apache=Path('/etc/apache2/sites-available')/(instance.base+'-https.conf')
+    before=apache.read_bytes()
+    write_private(apache,render_apache(instance),mode=0o644)
+    try: run(['apache2ctl','configtest'])
+    except Exception:
+        write_private(apache,before,mode=0o644)
+        raise
+    run(['systemctl','restart',instance.base+'.service'])
+    run(['systemctl','reload','apache2'])
+    phase('pairing_portal_enabled',user=instance.slug,url=instance.public_url+'/connect')
+
+
+def change_enabled(instance,enabled):
+    auth_backup(('enable-' if enabled else 'disable-')+instance.slug)
+    path=AUTH_CONFIG/'users.yml'
+    data=json.loads(path.read_text())
+    if instance.username not in data['users']: raise ValueError('Managed identity missing')
+    data['users'][instance.username]['disabled']=not enabled
+    stat=path.stat()
+    write_private(path,json.dumps(data,indent=2),mode=stat.st_mode&0o777,uid=stat.st_uid,gid=stat.st_gid)
+    if not enabled:
+        run(['systemctl','disable','--now',instance.base+'.service'])
+        run([instance.wrapper,'systemctl','--user','mask','--now','whatsapp-waha.service'])
+        dbpath=instance.state_dir/'archive.sqlite'
+        if dbpath.exists():
+            with sqlite3.connect(dbpath) as db:
+                db.execute('DELETE FROM link_sessions')
+                db.execute('DELETE FROM link_login_states')
+                db.execute('UPDATE subscriptions SET active=0')
+                db.execute("UPDATE deliveries SET state='cancelled' WHERE state IN ('pending','sending')")
+                db.execute("UPDATE sends SET state='failed_before_send' WHERE state='queued'")
+    run([AUTH_WRAPPER,'systemctl','--user','restart','sally-auth.service'])
+    if enabled:
+        run([instance.wrapper,'systemctl','--user','unmask','whatsapp-waha.service'])
+        run([instance.wrapper,'systemctl','--user','start','whatsapp-waha.service'])
+        run(['systemctl','enable','--now',instance.base+'.service'])
+    phase('user_enabled' if enabled else 'user_suspended',user=instance.slug,data_preserved=True)
+
+
+def main():
+    parser=argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action',choices=['list','plan','add','enable-linking','suspend','resume'])
+    parser.add_argument('--user')
+    parser.add_argument('--name')
+    parser.add_argument('--bridge-port',type=int)
+    parser.add_argument('--apply',action='store_true')
+    args=parser.parse_args()
+    if os.geteuid()!=0: raise SystemExit('Run as the authorized server administrator')
+    os.umask(0o077)
+    import fcntl
+    with (ROOT/'private/tenant-admin.lock').open('a') as lock:
+        fcntl.flock(lock,fcntl.LOCK_EX)
+        data=registry()
+        if args.action=='list':
+            print(json.dumps([{'phase':row['phase'],'enabled':row['enabled'],**Instance(**row['spec']).public_details()} for row in data['instances'].values()],indent=2))
+            return
+        if not args.user: raise SystemExit('--user is required')
+        found=data['instances'].get(args.user)
+        if found:
+            instance=Instance(**found['spec'])
+            if args.name and args.name!=instance.display_name: raise SystemExit('Display name differs from registered identity')
+            if args.bridge_port and args.bridge_port!=instance.bridge_port: raise SystemExit('Port differs from registered identity')
+        else:
+            if args.action not in ('plan','add') or not args.name: raise SystemExit('Use add with --name for a new user')
+            used={row['spec']['bridge_port'] for row in data['instances'].values()}
+            port=args.bridge_port or next(p for p in range(8822,8999,2) if p not in used)
+            if port in used: raise SystemExit('Port is already assigned to another user')
+            for p in (port,port+1):
+                with socket.socket() as probe:
+                    try: probe.bind(('127.0.0.1',p))
+                    except OSError: raise SystemExit('Port is already in use; choose another even --bridge-port') from None
+            instance=Instance(args.user,args.name,str(uuid.uuid4()),port)
+        if not args.apply or args.action=='plan':
+            phase('plan_only',action=args.action,**instance.public_details())
+            return
+        instance.private_dir.mkdir(parents=True,exist_ok=True,mode=0o700)
+        if args.action=='add':
+            if instance.slug=='personal': raise SystemExit('Use enable-linking to preserve the current instance')
+            if found and found['phase']=='ready':
+                phase('already_provisioned',**instance.public_details());return
+            data['instances'].setdefault(instance.slug,{'spec':instance.record(),'phase':'preparing','enabled':True})
+            save_registry(data)
+            identity=identity_for(instance)
+            prepare_runtime(instance)
+            install_auth(instance,identity)
+            register_subject(instance)
+            install_https(instance)
+            start_runtime(instance)
+            data['instances'][instance.slug]['phase']='ready'
+        elif args.action=='enable-linking':
+            enable_existing_link(instance)
+            data['instances'][instance.slug]['phase']='ready'
+        else:
+            change_enabled(instance,args.action=='resume')
+            data['instances'][instance.slug]['enabled']=args.action=='resume'
+        save_registry(data)
+
+
+if __name__=='__main__':
+    try: main()
+    except Exception as error:
+        # Do not expose provider exceptions, credential generator output or OAuth payloads.
+        print(json.dumps({'error':str(error) if isinstance(error,(ValueError,RuntimeError)) else type(error).__name__,
+                          'completed':False}),flush=True)
+        raise SystemExit(1) from None

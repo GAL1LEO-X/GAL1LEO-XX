@@ -1,0 +1,260 @@
+{
+  "base": {
+    "config_digest": "sha256:f0a3c175db2a5d04b48a5dd1989899bb2a535950371f96b74e145683b770f26c",
+    "layers_preserved": 12,
+    "provider_version": "0.8.6",
+    "runtime_configuration_unchanged": true
+  },
+  "build": {
+    "added_layers": 1,
+    "overlay_files": 2067,
+    "passed": true,
+    "production_containers_and_images_unchanged": true,
+    "runtime_config_unchanged": true
+  },
+  "candidate_versions": {
+    "backend": "0.8.13",
+    "provider": "0.8.7"
+  },
+  "compiler": {
+    "archive_sha256": "6211754e04aed2bed586c15dca978cd5f4fb94b369c69e9acb6b6c61d01224bb",
+    "gcc": "12.2.0",
+    "go": "1.26.4",
+    "harness_image": "sha256:5d2f6e80aabae8bfd64a01f489706f9860f837b3ce3d95d157b91713e0cd9c78",
+    "image_config_digest": "sha256:1a7ac3af3af212f23b6a5c90d68268bfb80824694c16a44dab57c1ca12a73bde",
+    "libvips": "8.14.1",
+    "usr_content_file_modes_and_symlinks_verified": true,
+    "usr_directory_modes_verified": false
+  },
+  "deployment_performed": false,
+  "first_attempt": {
+    "classification": "qualifier_reporter_mismatch",
+    "compiled_tests_exit": 0,
+    "compiled_tests_failed": 0,
+    "compiled_tests_passed": 7,
+    "container_removed": true,
+    "image_rebuilt": false,
+    "remedy": "Explicit TAP reporter for the unchanged direct Node execution; separate receipts.",
+    "runtime_probe_executed": false
+  },
+  "gows": {
+    "bytes": 48390352,
+    "cloud_test_containers_removed": 9,
+    "focused_passed": 51,
+    "historical_skips": 29,
+    "independent_builds_identical": true,
+    "packages_covered": 14,
+    "race_historical_skips": 29,
+    "race_passed": 450,
+    "sha256": "01250b1cd8bc6a2d801360337aa0a5b834bc398d4cc8a94ab20a57b373773fe4",
+    "tests_passed": 503,
+    "vet_passed": true
+  },
+  "instances": [
+    {
+      "ab_contract": {
+        "operations": [
+          "contacts_get_about",
+          "contacts_block",
+          "contacts_unblock",
+          "messages_set_star",
+          "chats_pin_message",
+          "chats_unpin_message",
+          "chats_archive_chat",
+          "chats_unarchive_chat"
+        ],
+        "version": "gows-ab-v1"
+      },
+      "audio_decoded": true,
+      "audio_playback_on_whatsapp_verified": false,
+      "auth_statuses": [
+        401,
+        200
+      ],
+      "cleanup": {
+        "container_removed": true,
+        "exit_code": 143,
+        "failures": [],
+        "graceful_stop": true,
+        "oom_killed": false
+      },
+      "compiled_tests": {
+        "failed": 0,
+        "passed": 7,
+        "tap_sha256": "e9b803c1a65c2f7bfa867a4481da25ee6490a17dedc7b97f9bfa5af09cf4ada3"
+      },
+      "dist": {
+        "dependencyFilesVerified": [
+          ".yarnrc.yml",
+          "package.json",
+          "yarn.lock"
+        ],
+        "distFiles": 2066,
+        "distInventoryVerified": true,
+        "gowsMode": "0755"
+      },
+      "ffmpeg": "ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers",
+      "gows": {
+        "elf": "linux-amd64",
+        "help": "passed",
+        "loader": "resolved",
+        "sha256": "01250b1cd8bc6a2d801360337aa0a5b834bc398d4cc8a94ab20a57b373773fe4"
+      },
+      "isolation": {
+        "capabilities": [],
+        "fixture_mount_read_only": true,
+        "memory": 1073741824,
+        "network": "none",
+        "pids_limit": 256,
+        "read_only_root": true,
+        "tmpfs": {
+          "/run/qualification": "rw,nosuid,nodev,size=536870912,mode=1777,rprivate,tmpcopyup"
+        },
+        "user": "1000:1000"
+      },
+      "lifecycle_attempts": 0,
+      "native_loader_resolved": true,
+      "passed": true,
+      "production_containers_and_images_unchanged": true,
+      "sessions": [],
+      "slug": "personal",
+      "tini": "tini version 0.19.0",
+      "uid": 1000
+    },
+    {
+      "ab_contract": {
+        "operations": [
+          "contacts_get_about",
+          "contacts_block",
+          "contacts_unblock",
+          "messages_set_star",
+          "chats_pin_message",
+          "chats_unpin_message",
+          "chats_archive_chat",
+          "chats_unarchive_chat"
+        ],
+        "version": "gows-ab-v1"
+      },
+      "audio_decoded": true,
+      "audio_playback_on_whatsapp_verified": false,
+      "auth_statuses": [
+        401,
+        200
+      ],
+      "cleanup": {
+        "container_removed": true,
+        "exit_code": 143,
+        "failures": [],
+        "graceful_stop": true,
+        "oom_killed": false
+      },
+      "compiled_tests": {
+        "failed": 0,
+        "passed": 7,
+        "tap_sha256": "6a47989d186509fd0b040b06705da282837ef60b00d4a7e33ba7878c6179f413"
+      },
+      "dist": {
+        "dependencyFilesVerified": [
+          ".yarnrc.yml",
+          "package.json",
+          "yarn.lock"
+        ],
+        "distFiles": 2066,
+        "distInventoryVerified": true,
+        "gowsMode": "0755"
+      },
+      "ffmpeg": "ffmpeg version 5.1.9-0+deb12u1 Copyright (c) 2000-2026 the FFmpeg developers",
+      "gows": {
+        "elf": "linux-amd64",
+        "help": "passed",
+        "loader": "resolved",
+        "sha256": "01250b1cd8bc6a2d801360337aa0a5b834bc398d4cc8a94ab20a57b373773fe4"
+      },
+      "isolation": {
+        "capabilities": [],
+        "fixture_mount_read_only": true,
+        "memory": 1073741824,
+        "network": "none",
+        "pids_limit": 256,
+        "read_only_root": true,
+        "tmpfs": {
+          "/run/qualification": "rw,nosuid,nodev,size=536870912,mode=1777,rprivate,tmpcopyup"
+        },
+        "user": "1000:1000"
+      },
+      "lifecycle_attempts": 0,
+      "native_loader_resolved": true,
+      "passed": true,
+      "production_containers_and_images_unchanged": true,
+      "sessions": [],
+      "slug": "secondary",
+      "tini": "tini version 0.19.0",
+      "uid": 1000
+    }
+  ],
+  "limitations": [
+    "No live WhatsApp/client acceptance tests",
+    "OCI transport not claimed reproducible across builder timestamps",
+    "Dependency source-provenance limitations inherited from provider 0.8.6"
+  ],
+  "production_configuration_changed": false,
+  "published_provider_lock_changed": false,
+  "qualification_script_sha256": "f39287271f03164ef5bafcbdf5599cb303bc982be5ce3844dcad91599c19ef79",
+  "qualified_provider_source_commit": "81f98a44a41ccb805bcbb74ca31e60111beb0126",
+  "real_accounts_used": false,
+  "receipts": {
+    "GOWS-COMPLETE-HANDOFF.json": {
+      "bytes": 4188,
+      "sha256": "c52affee7447a4eb7f4c7a2190c654ff034323e168d1a34230ef88a102af73cd"
+    },
+    "build-result.json": {
+      "bytes": 485,
+      "sha256": "69b0c3c87f43993e237fb455c4287c09bffebad05050cf6590351969d0f71d14"
+    },
+    "compiler-usr-verification.json": {
+      "bytes": 1056,
+      "sha256": "25be729942059b15238c75374acd4d18ddba5fb2208d67408ae53cfb1192eb89"
+    },
+    "execution-result.json": {
+      "bytes": 4554,
+      "sha256": "41fe8db63c7c141a4e02de3d36bdc3e34c8d995d7e7e611e59668bdac89dd644"
+    },
+    "qualification-result.json": {
+      "bytes": 1333,
+      "sha256": "4f397581698bd71028acc16740583e5969a806dfd986e26c1c6756fbee782c65"
+    },
+    "qualification-v2-result.json": {
+      "bytes": 23474,
+      "sha256": "23282bc7648c904b71eca08b723c9ed20982a48bf57be7668c90c688a7a05e55"
+    },
+    "runtime-metadata.json": {
+      "bytes": 554,
+      "sha256": "8460ee4f162a64a2a065712e4660c980789f48f48ee1a3dd1b78dad8f3f74a64"
+    }
+  },
+  "recipe": "recovered_QA163_cloud_harness_and_existing_rootless_stores",
+  "release_gate": "closed_until_real_provider_release_assets_and_fingerprint_are_available",
+  "runtime": {
+    "archive_bytes": 842014720,
+    "archive_sha256": "0a59e2afd478eea495ff7e27695a9647443290e2caec3896dff7205a42a64bb4",
+    "config_digest": "sha256:ebc2c8b500a6d1695ab174268be04f87a2f6b4e8d897c9d0c161394156c86369",
+    "gows_sha256": "01250b1cd8bc6a2d801360337aa0a5b834bc398d4cc8a94ab20a57b373773fe4",
+    "input_manifest_sha256": "ea962f5df267af0ecb29592ffb1d74d80b7cf1d2796bc7e95e36baff2900c038",
+    "manifest_digest": "sha256:8190e16735975841997e5b823f5173e35cc10244a0961bdcc6ea3d53ddf5c1c2",
+    "source_commit": "81f98a44a41ccb805bcbb74ca31e60111beb0126"
+  },
+  "schema_version": 1,
+  "status": "qualified_candidate_not_published_or_installed",
+  "waha": {
+    "excluded_top_level": [
+      "dashboard",
+      "plus"
+    ],
+    "full_dist_files": 2067,
+    "full_dist_inventory_sha256": "332950c568402d13e97c7ca23faa64288cd569c92c9429b77c6f3c1f8c8a61dc",
+    "independent_dist_builds_identical": true,
+    "node": "24.19.0",
+    "runtime_dist_files": 2066
+  },
+  "whatsapp_messages_or_read_receipts": false
+}

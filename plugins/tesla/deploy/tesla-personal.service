@@ -1,0 +1,24 @@
+[Unit]
+Description=TESLA personal MCP and owner console
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+User=tesla-personal
+Group=tesla-personal
+UMask=0077
+WorkingDirectory=/opt/tesla-personal/current
+ExecStart=/opt/tesla-personal/current/venv/bin/tesla-plugin serve --config /etc/tesla-personal/settings.json --port 8018
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=30
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/lib/tesla-personal
+InaccessiblePaths=/etc/tesla-command/private /etc/tesla-telemetry/private
+LimitCORE=0
+
+[Install]
+WantedBy=multi-user.target

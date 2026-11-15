@@ -1,0 +1,2010 @@
+{
+  "format_version": 1,
+  "base_sha": "46dea764d235ec80ab4f8ab1d61cc2f224bffa24",
+  "backend": "0.7.0",
+  "sqlite_schema": 8,
+  "evidence_scope": "offline synthetic; no server access, live WhatsApp callback or platform task start verification",
+  "application_event_count": 54,
+  "trigger_names": [
+    "message.received",
+    "message.digest",
+    "whatsapp.event"
+  ],
+  "incoming_triggers": [
+    {
+      "name": "message.received",
+      "provider": "message.any fromMe=false",
+      "offline_tests": [
+        "tests/test_bridge.py",
+        "tests/test_event_catalog_pipeline.py"
+      ],
+      "limit": "First live acquisition within configured age; explicit filters; no history replay."
+    },
+    {
+      "name": "message.digest",
+      "provider": "message.any fromMe=false",
+      "offline_tests": [
+        "tests/test_event_policies.py",
+        "tests/test_callback_chain.py"
+      ],
+      "limit": "Explicit mechanical window, max50 members; no semantics; consumer fetches members."
+    }
+  ],
+  "application_events": [
+    {
+      "event_type": "session.status",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "session.status",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Status only; no authentication challenges, QR, codes or session internals.",
+      "provider_source_refs": "session.abc.ts:297; session.gows.core.ts:433",
+      "provider_limit": "connection lifecycle; only status retained"
+    },
+    {
+      "event_type": "message.reaction",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "message.reaction",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Typed reaction.messageId is the target; reaction ID is not its source.",
+      "provider_source_refs": "session.gows.core.ts:700-704,3383-3406",
+      "provider_limit": "reaction.messageId is the target; payload.id is reaction notice"
+    },
+    {
+      "event_type": "message.ack",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "message.ack",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Provider receipt only; submitted is not delivered; actor and target identity remain distinct.",
+      "provider_source_refs": "session.gows.core.ts:682-698,3332-3380",
+      "provider_limit": "individual receipts; mapped types only; no ordering guarantee"
+    },
+    {
+      "event_type": "message.ack.group",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "message.ack.group",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Provider group receipt; no invented individual participant delivery.",
+      "provider_source_refs": "session.gows.core.ts:682-698,3332-3380",
+      "provider_limit": "group receipt has participant; not aggregate all-members delivery"
+    },
+    {
+      "event_type": "message.edited",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "message.edited",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired edit only; source and quoted-message visibility still apply; no phone-current guarantee.",
+      "provider_source_refs": "session.gows.core.ts:662-680",
+      "provider_limit": "target ID distinct from notice ID; observed content not certified current phone state"
+    },
+    {
+      "event_type": "message.revoked",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "message.revoked",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "State notification; original contents remain unavailable.",
+      "provider_source_refs": "session.gows.core.ts:640-659",
+      "provider_limit": "raw target ID scoped by chat, after notice and before=null"
+    },
+    {
+      "event_type": "group.v2.join",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "group.v2.join",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:768-770; groups.gows.ts:31-37",
+      "provider_limit": "group.id; own join or addition"
+    },
+    {
+      "event_type": "group.v2.leave",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "group.v2.leave",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:774-778; groups.gows.ts:39-61",
+      "provider_limit": "own group leave, requires self identity"
+    },
+    {
+      "event_type": "group.v2.update",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "group.v2.update",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:788-792; groups.gows.ts:152-179",
+      "provider_limit": "name/topic/announcement/join approval/invite; complementary raw metadata fills other fields"
+    },
+    {
+      "event_type": "group.v2.participants",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "group.v2.participants",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:780-786; groups.gows.ts:77-102",
+      "provider_limit": "join/leave/promote/demote per group"
+    },
+    {
+      "event_type": "group.v2.participants.join-request",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "group.v2.participants.join-request",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:794-801; groups.gows.ts:226-247",
+      "provider_limit": "created/revoked/rejected; requester and group IDs"
+    },
+    {
+      "event_type": "presence.update",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "presence.update",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:752-764,561-594",
+      "provider_limit": "subscription/online/privacy dependent; may include synthetic paused after incoming message"
+    },
+    {
+      "event_type": "poll.vote",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "poll.vote",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Passive historical/present vote observation only; no new poll creation or vote actions. Typed source visibility applies.",
+      "provider_source_refs": "session.gows.core.ts:827-842",
+      "provider_limit": "passive decrypted vote, no creation/vote action"
+    },
+    {
+      "event_type": "poll.vote.failed",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "poll.vote.failed",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Passive historical/present vote observation only; no new poll creation or vote actions. Typed source visibility applies.",
+      "provider_source_refs": "session.gows.core.ts:827-842",
+      "provider_limit": "passive failure metadata; not proof of no vote"
+    },
+    {
+      "event_type": "call.received",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "call.received",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:709-721,3198-3211",
+      "provider_limit": "CallOffer/CallOfferNotice; call.id distinct from message ID"
+    },
+    {
+      "event_type": "call.accepted",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "call.accepted",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:723-728,3198-3211",
+      "provider_limit": "CallAccept; call.id"
+    },
+    {
+      "event_type": "call.rejected",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "call.rejected",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:730-750",
+      "provider_limit": "reject/terminate collapsed with 1s debounce; accepted_elsewhere/rejected_elsewhere excluded"
+    },
+    {
+      "event_type": "label.upsert",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "label.upsert",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:805-822; labels.gows.ts:9-15",
+      "provider_limit": "label.id; FromFullSync excluded before DTO"
+    },
+    {
+      "event_type": "label.deleted",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "label.deleted",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:805-822; labels.gows.ts:9-15",
+      "provider_limit": "label.id; FromFullSync excluded before DTO"
+    },
+    {
+      "event_type": "label.chat.added",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "label.chat.added",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:869-890; labels.gows.ts:21-28",
+      "provider_limit": "labelId/chatId; FromFullSync excluded before DTO"
+    },
+    {
+      "event_type": "label.chat.deleted",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "label.chat.deleted",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "session.gows.core.ts:869-890; labels.gows.ts:21-28",
+      "provider_limit": "labelId/chatId; FromFullSync excluded before DTO"
+    },
+    {
+      "event_type": "event.response",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "event.response",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Typed RSVP source references only; callback event time does not resolve UI timezone ambiguity in event creation.",
+      "provider_source_refs": "session.gows.core.ts:847-863,3237-3265",
+      "provider_limit": "eventCreationKey + response message; all typed dependencies retained"
+    },
+    {
+      "event_type": "event.response.failed",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "event.response.failed",
+        "mapping": "WAHA GOWS public event"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_provider_catalog_callback_has_readable_context_without_receipts",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Typed RSVP source references only; callback event time does not resolve UI timezone ambiguity in event creation.",
+      "provider_source_refs": "session.gows.core.ts:847-863,3237-3265",
+      "provider_limit": "eventCreationKey; response absent/decryption failed"
+    },
+    {
+      "event_type": "chat.deleted",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.DeleteChat",
+        "mapping": "typed linked-state projection"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_linked_state_event_has_callback_and_readable_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Known provider cutoff only; no complete phone mirror."
+    },
+    {
+      "event_type": "chat.cleared",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.ClearChat",
+        "mapping": "typed linked-state projection"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_linked_state_event_has_callback_and_readable_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Coverage remains uncertain; range anchors do not prove complete selection."
+    },
+    {
+      "event_type": "message.deleted_for_me",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.DeleteForMe",
+        "mapping": "typed linked-state projection"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_linked_state_event_has_callback_and_readable_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Chat/raw ID/direction exclusion; group author is not guessed."
+    },
+    {
+      "event_type": "chat.archived",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.Archive",
+        "mapping": "typed linked-state projection"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_linked_state_event_has_callback_and_readable_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired organizational state only; no guarantee of phone freshness."
+    },
+    {
+      "event_type": "message.starred",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.Star",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Metadata only; full ID requires proven direction and group participant.",
+      "provider_source_refs": "appstate.go:52-62; ../../appstate.go:326-341",
+      "provider_limit": "chat, raw ID, direction, optional author; complete message ID only with group author"
+    },
+    {
+      "event_type": "chat.pinned",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.Pin",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "appstate.go:43-50; ../../appstate.go:281-286",
+      "provider_limit": "chatId/pinned; no message identity"
+    },
+    {
+      "event_type": "chat.muted",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.Mute",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "appstate.go:76-83; ../../appstate.go:267-280",
+      "provider_limit": "chatId/muted; muteEndTimestamp milliseconds (-1 forever)"
+    },
+    {
+      "event_type": "chat.read",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.MarkChatAsRead",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Observed chat read marker only; does not send read receipts or prove each member was read.",
+      "provider_source_refs": "appstate.go:94-101; ../../appstate.go:358-364",
+      "provider_limit": "chatId/read; observes another device, never sends receipts or treats ranges as individual ACK"
+    },
+    {
+      "event_type": "label.message.added",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.LabelAssociationMessage",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Provider gives raw ID/chat without direction or participant; no invented message key.",
+      "provider_source_refs": "appstate.go:167-176; ../../appstate.go:410-423",
+      "provider_limit": "rawMessageId/chatId/labelId/labeled; source lacks direction/author, so no invented full key"
+    },
+    {
+      "event_type": "profile.name.changed",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.PushNameSetting",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "appstate.go:123-129",
+      "provider_limit": "account name; FromFullSync preserved"
+    },
+    {
+      "event_type": "chat.archive_setting",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.UnarchiveChatsSetting",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "appstate.go:131-137",
+      "provider_limit": "account unarchiveChats; account event requires all_chats"
+    },
+    {
+      "event_type": "status.muted",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.UserStatusMute",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "appstate.go:139-146",
+      "provider_limit": "user chatId/muted; no content"
+    },
+    {
+      "event_type": "contact.push_name",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.PushName",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "appstate.go:26-33; ../../user.go:699",
+      "provider_limit": "user chatId old/new name; nested Message discarded"
+    },
+    {
+      "event_type": "contact.business_name",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.BusinessName",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "appstate.go:35-41; ../../user.go:728",
+      "provider_limit": "user chatId old/new business name; nested Message discarded"
+    },
+    {
+      "event_type": "contact.picture",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.Picture",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "events.go:530-539; ../../notification.go:94",
+      "provider_limit": "user/group chatId, removal, pictureId; no URL/photo download"
+    },
+    {
+      "event_type": "contact.about",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.UserAbout",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "events.go:541-546; ../../notification.go:452",
+      "provider_limit": "user chatId/about, bounded to4000 chars"
+    },
+    {
+      "event_type": "contact.identity",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.IdentityChange",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "events.go:548-556; ../../notification.go:67",
+      "provider_limit": "user chatId/implicit; no identity key material"
+    },
+    {
+      "event_type": "account.privacy",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.PrivacySettings",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "events.go:558-571; ../../privacysettings.go:123",
+      "provider_limit": "allowlisted settings and changed flags; no actions"
+    },
+    {
+      "event_type": "account.blocklist",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.Blocklist",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Bounded metadata list with explicit truncation; not a complete phone snapshot.",
+      "provider_source_refs": "events.go:615-635; ../../notification.go:246",
+      "provider_limit": "changes bounded100; modify means requiresRefresh, not fabricated complete blocklist"
+    },
+    {
+      "event_type": "channel.joined",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.NewsletterJoin",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Selected channel metadata only; no raw channel protocol tree.",
+      "provider_source_refs": "events.go:642-645; ../../notification.go:396",
+      "provider_limit": "channel ID/state/name/description; invite, picture, URL discarded"
+    },
+    {
+      "event_type": "channel.left",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.NewsletterLeave",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "events.go:647-651; ../../notification.go:397",
+      "provider_limit": "channel ID/role; source event timestamp absent in JSON, envelope observation used"
+    },
+    {
+      "event_type": "channel.muted",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.NewsletterMuteChange",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "events.go:653-657; ../../notification.go:398",
+      "provider_limit": "channel ID/on-off; no mute action"
+    },
+    {
+      "event_type": "channel.updated",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.NewsletterLiveUpdate",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Bounded channel-update metadata; no raw message bodies or protocol trees.",
+      "provider_source_refs": "events.go:659-663; ../../notification.go:381-388",
+      "provider_limit": "channel ID/counts/raw IDs; bounded100, never message body or claimed archive coverage"
+    },
+    {
+      "event_type": "message.unavailable",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.UndecryptableMessage",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Observed undecryptable message metadata only; no reconstructed content.",
+      "provider_source_refs": "events.go:295-311; ../../message.go",
+      "provider_limit": "observed chat/direction/ID; contentAvailable=false; no content reconstructed"
+    },
+    {
+      "event_type": "account.reachout_timelock",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.NotifyAccountReachoutTimelock",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Acquired provider observation only; typed bounds, scope, source visibility and event-age/authorization limits apply.",
+      "provider_source_refs": "events.go:665-670; GOWS gows.go:232-248",
+      "provider_limit": "account active/end; provider also actively fetches this on connection"
+    },
+    {
+      "event_type": "account.message_capping",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "gows.MessageCapping",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Observed provider cap counters only; not permission to retry or bypass the cap.",
+      "provider_source_refs": "GOWS capping.go:23-32; gows.go:278-295",
+      "provider_limit": "quota/status/epoch fields only; provider polls independently, not proof of send permission"
+    },
+    {
+      "event_type": "call.terminated",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.CallTerminate",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Termination metadata only; not an outgoing-call capability.",
+      "provider_source_refs": "call.go:61-66; ../../call.go:89-94",
+      "provider_limit": "callId/reason/from; group uses matching GroupJID and Data.Attrs[group-jid], missing/conflicting yields chatId=null; never caller DM; no raw nodes"
+    },
+    {
+      "event_type": "message.receipt.self",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.Receipt",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Only read-self/played-self; bounded batch, explicit direction; no singular delivery ack.",
+      "provider_source_refs": "events.go:440-452; ../presence.go:45-56",
+      "provider_limit": "ONLY read-self/played-self; batch references, no singular ACK, group author mandatory for complete IDs"
+    },
+    {
+      "event_type": "group.v2.metadata",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.GroupInfo",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Only fields omitted by public GOWS DTOs; no duplicate public update or invitation code.",
+      "provider_source_refs": "events.go:493-528; ../group.go:136-171",
+      "provider_limit": "ONLY Locked/Ephemeral/Delete/Link/Unlink/Suspended/Unsuspended; already-public fields alone returnNone"
+    },
+    {
+      "event_type": "label.message.deleted",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "engine.event",
+        "raw_type": "events.LabelAssociationMessage",
+        "mapping": "typed provider-event allowlist"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "Provider gives raw ID/chat without direction or participant; no invented message key.",
+      "provider_source_refs": "appstate.go:167-176; ../../appstate.go:410-423",
+      "provider_limit": "rawMessageId/chatId/labelId/labeled; source lacks direction/author, so no invented full key"
+    },
+    {
+      "event_type": "message.sent",
+      "subscription": "whatsapp.event",
+      "provider": {
+        "transport": "message.any",
+        "condition": "fromMe=true",
+        "mapping": "generated after first live acquisition"
+      },
+      "provider_emission_verified": "pinned source mapping; no live test",
+      "bridge_supported": true,
+      "offline_pipeline_test": "tests/test_event_catalog_pipeline.py::test_own_message_has_explicit_event_dedup_and_consumer_pointer",
+      "offline_pipeline_stages": [
+        "HMAC webhook",
+        "normalization",
+        "explicit subscription",
+        "outbox",
+        "callback",
+        "payload schema",
+        "get_account_event",
+        "acquired context without provider reads"
+      ],
+      "limits": "First eligible live observation only; incoming and history excluded; no send operation is performed."
+    }
+  ],
+  "provider_exclusions": [
+    {
+      "provider_types": [
+        "whatsmeow.QRChannelItem",
+        "events.QR",
+        "events.PairSuccess",
+        "events.PairError",
+        "events.PairPasskeyRequest",
+        "events.PairPasskeyConfirmation",
+        "events.PairPasskeyError",
+        "events.RotateADVSecret"
+      ],
+      "reason": "Authentication material or internal linking state; only sanitized session.status is public."
+    },
+    {
+      "provider_types": [
+        "events.HistorySync",
+        "events.Contact"
+      ],
+      "reason": "Excluded by pinned WAHA StreamEvents; do not imply a live trigger or replay archived contacts/history."
+    },
+    {
+      "provider_types": [
+        "events.AppState",
+        "events.AppStateSyncComplete",
+        "events.AppStateSyncError",
+        "events.OfflineSyncPreview",
+        "events.OfflineSyncCompleted"
+      ],
+      "reason": "Internal synchronization, not an application change; no generic raw export."
+    },
+    {
+      "provider_types": [
+        "events.MediaRetry"
+      ],
+      "reason": "Contains cryptographic media retry material; never exported."
+    },
+    {
+      "provider_types": [
+        "events.CallTransport",
+        "events.CallRelayLatency",
+        "events.CallPreAccept",
+        "events.UnknownCallEvent"
+      ],
+      "reason": "Internal transport or untyped call payload; public received/accepted/rejected/terminated metadata covers supported call changes."
+    },
+    {
+      "provider_types": [
+        "events.Message",
+        "events.ChatPresence",
+        "events.Presence",
+        "events.JoinedGroup",
+        "events.LabelEdit",
+        "events.LabelAssociationChat"
+      ],
+      "reason": "Handled by existing public WAHA event mapping; raw duplicate is ignored."
+    },
+    {
+      "provider_types": [
+        "events.Receipt"
+      ],
+      "condition": "delivery/read/played public variants",
+      "reason": "Handled by public message.ack/message.ack.group; only read-self/played-self use additive raw projection."
+    },
+    {
+      "provider_types": [
+        "events.Receipt"
+      ],
+      "condition": "sender/retry/hist_sync/peer_msg",
+      "reason": "Internal protocol or synchronization receipt; not a user-visible read/delivery claim."
+    },
+    {
+      "provider_types": [
+        "events.GroupInfo"
+      ],
+      "condition": "only name/topic/announce/join/new invite or public-mapped change",
+      "reason": "Already mapped to public group events; additive metadata emits only omitted fields."
+    },
+    {
+      "provider_types": [
+        "message.waiting",
+        "state.change",
+        "group.join",
+        "group.leave",
+        "chat.archive"
+      ],
+      "reason": "WAHA enums with no public pinned GOWS mapping; not advertised as supported emissions."
+    },
+    {
+      "provider_types": [
+        "unknown engine types"
+      ],
+      "reason": "Ignored until a concrete provider contract and safe projection are implemented."
+    }
+  ],
+  "delivery_tests": [
+    "tests/test_callback_chain.py",
+    "tests/test_event_ttl.py",
+    "tests/test_event_authorization.py",
+    "tests/test_event_recovery.py"
+  ],
+  "compatibility": "Existing event_types selections are never expanded; new types require discovery and explicit consumer subscription changes after authorized deployment.",
+  "timing": "Provider, acquisition, queue, attempt and HTTP2xx acceptance are distinct; unknown provider times omitted; platform start is not observed.",
+  "pinned_provider_sources": {
+    "waha_sha": "d214c874eb009a3921b80e92e4c13928ddd38550",
+    "gows_sha_at_inventory_start": "33b25dbe8697896050adcc7e69c5d4645e04714e"
+  },
+  "provider_catalog": [
+    {
+      "layer": "WAHA enum",
+      "provider_event": "session.status",
+      "source": "session.abc.ts:297; session.gows.core.ts:433",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "connection lifecycle; only status retained"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "message",
+      "source": "session.gows.core.ts:610-637",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "incoming only; accepted but message.any is configured"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "message.reaction",
+      "source": "session.gows.core.ts:700-704,3383-3406",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "reaction.messageId is the target; payload.id is reaction notice"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "message.any",
+      "source": "session.gows.core.ts:610-637; GOWS gows.go:506-523",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "incoming and own; own creates message.sent"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "message.ack",
+      "source": "session.gows.core.ts:682-698,3332-3380",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "individual receipts; mapped types only; no ordering guarantee"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "message.ack.group",
+      "source": "session.gows.core.ts:682-698,3332-3380",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "group receipt has participant; not aggregate all-members delivery"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "message.waiting",
+      "source": "enums.dto.ts:3-35",
+      "source_emission_bound": false,
+      "bridge_support": "not emitted by selected GOWS public mapper",
+      "limit": "declared enum; no selected GOWS public mapping found"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "message.revoked",
+      "source": "session.gows.core.ts:640-659",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "raw target ID scoped by chat, after notice and before=null"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "message.edited",
+      "source": "session.gows.core.ts:662-680",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "target ID distinct from notice ID; observed content not certified current phone state"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "state.change",
+      "source": "enums.dto.ts:3-35",
+      "source_emission_bound": false,
+      "bridge_support": "not emitted by selected GOWS public mapper",
+      "limit": "declared enum; no selected GOWS public mapping found"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "group.join",
+      "source": "enums.dto.ts:3-35",
+      "source_emission_bound": false,
+      "bridge_support": "not emitted by selected GOWS public mapper",
+      "limit": "declared enum; no selected GOWS public mapping found"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "group.leave",
+      "source": "enums.dto.ts:3-35",
+      "source_emission_bound": false,
+      "bridge_support": "not emitted by selected GOWS public mapper",
+      "limit": "declared enum; no selected GOWS public mapping found"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "group.v2.join",
+      "source": "session.gows.core.ts:768-770; groups.gows.ts:31-37",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "group.id; own join or addition"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "group.v2.leave",
+      "source": "session.gows.core.ts:774-778; groups.gows.ts:39-61",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "own group leave, requires self identity"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "group.v2.update",
+      "source": "session.gows.core.ts:788-792; groups.gows.ts:152-179",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "name/topic/announcement/join approval/invite; complementary raw metadata fills other fields"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "group.v2.participants",
+      "source": "session.gows.core.ts:780-786; groups.gows.ts:77-102",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "join/leave/promote/demote per group"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "group.v2.participants.join-request",
+      "source": "session.gows.core.ts:794-801; groups.gows.ts:226-247",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "created/revoked/rejected; requester and group IDs"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "presence.update",
+      "source": "session.gows.core.ts:752-764,561-594",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "subscription/online/privacy dependent; may include synthetic paused after incoming message"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "poll.vote",
+      "source": "session.gows.core.ts:827-842",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "passive decrypted vote, no creation/vote action"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "poll.vote.failed",
+      "source": "session.gows.core.ts:827-842",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "passive failure metadata; not proof of no vote"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "chat.archive",
+      "source": "enums.dto.ts:3-35",
+      "source_emission_bound": false,
+      "bridge_support": "not emitted by selected GOWS public mapper",
+      "limit": "declared enum; no selected GOWS public mapping found"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "call.received",
+      "source": "session.gows.core.ts:709-721,3198-3211",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "CallOffer/CallOfferNotice; call.id distinct from message ID"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "call.accepted",
+      "source": "session.gows.core.ts:723-728,3198-3211",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "CallAccept; call.id"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "call.rejected",
+      "source": "session.gows.core.ts:730-750",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "reject/terminate collapsed with 1s debounce; accepted_elsewhere/rejected_elsewhere excluded"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "label.upsert",
+      "source": "session.gows.core.ts:805-822; labels.gows.ts:9-15",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "label.id; FromFullSync excluded before DTO"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "label.deleted",
+      "source": "session.gows.core.ts:805-822; labels.gows.ts:9-15",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "label.id; FromFullSync excluded before DTO"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "label.chat.added",
+      "source": "session.gows.core.ts:869-890; labels.gows.ts:21-28",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "labelId/chatId; FromFullSync excluded before DTO"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "label.chat.deleted",
+      "source": "session.gows.core.ts:869-890; labels.gows.ts:21-28",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "labelId/chatId; FromFullSync excluded before DTO"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "event.response",
+      "source": "session.gows.core.ts:847-863,3237-3265",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "eventCreationKey + response message; all typed dependencies retained"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "event.response.failed",
+      "source": "session.gows.core.ts:847-863,3237-3265",
+      "source_emission_bound": true,
+      "bridge_support": "supported",
+      "limit": "eventCreationKey; response absent/decryption failed"
+    },
+    {
+      "layer": "WAHA enum",
+      "provider_event": "engine.event",
+      "source": "session.gows.core.ts:602; GOWS server/events.go:64-107",
+      "source_emission_bound": true,
+      "bridge_support": "typed raw dispatcher",
+      "limit": "internal acquisition only; exact typed allowlist, never public generic raw data"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.Star",
+      "application_event": [
+        "message.starred"
+      ],
+      "source": "appstate.go:52-62; ../../appstate.go:326-341",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "chat, raw ID, direction, optional author; complete message ID only with group author"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.Pin",
+      "application_event": [
+        "chat.pinned"
+      ],
+      "source": "appstate.go:43-50; ../../appstate.go:281-286",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "chatId/pinned; no message identity"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.Mute",
+      "application_event": [
+        "chat.muted"
+      ],
+      "source": "appstate.go:76-83; ../../appstate.go:267-280",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "chatId/muted; muteEndTimestamp milliseconds (-1 forever)"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.MarkChatAsRead",
+      "application_event": [
+        "chat.read"
+      ],
+      "source": "appstate.go:94-101; ../../appstate.go:358-364",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "chatId/read; observes another device, never sends receipts or treats ranges as individual ACK"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.LabelAssociationMessage",
+      "application_event": [
+        "label.message.added",
+        "label.message.deleted"
+      ],
+      "source": "appstate.go:167-176; ../../appstate.go:410-423",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "rawMessageId/chatId/labelId/labeled; source lacks direction/author, so no invented full key"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.PushNameSetting",
+      "application_event": [
+        "profile.name.changed"
+      ],
+      "source": "appstate.go:123-129",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "account name; FromFullSync preserved"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.UnarchiveChatsSetting",
+      "application_event": [
+        "chat.archive_setting"
+      ],
+      "source": "appstate.go:131-137",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "account unarchiveChats; account event requires all_chats"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.UserStatusMute",
+      "application_event": [
+        "status.muted"
+      ],
+      "source": "appstate.go:139-146",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "user chatId/muted; no content"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.PushName",
+      "application_event": [
+        "contact.push_name"
+      ],
+      "source": "appstate.go:26-33; ../../user.go:699",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "user chatId old/new name; nested Message discarded"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.BusinessName",
+      "application_event": [
+        "contact.business_name"
+      ],
+      "source": "appstate.go:35-41; ../../user.go:728",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "user chatId old/new business name; nested Message discarded"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.Picture",
+      "application_event": [
+        "contact.picture"
+      ],
+      "source": "events.go:530-539; ../../notification.go:94",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "user/group chatId, removal, pictureId; no URL/photo download"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.UserAbout",
+      "application_event": [
+        "contact.about"
+      ],
+      "source": "events.go:541-546; ../../notification.go:452",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "user chatId/about, bounded to4000 chars"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.IdentityChange",
+      "application_event": [
+        "contact.identity"
+      ],
+      "source": "events.go:548-556; ../../notification.go:67",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "user chatId/implicit; no identity key material"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.PrivacySettings",
+      "application_event": [
+        "account.privacy"
+      ],
+      "source": "events.go:558-571; ../../privacysettings.go:123",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "allowlisted settings and changed flags; no actions"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.Blocklist",
+      "application_event": [
+        "account.blocklist"
+      ],
+      "source": "events.go:615-635; ../../notification.go:246",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "changes bounded100; modify means requiresRefresh, not fabricated complete blocklist"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.NewsletterJoin",
+      "application_event": [
+        "channel.joined"
+      ],
+      "source": "events.go:642-645; ../../notification.go:396",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "channel ID/state/name/description; invite, picture, URL discarded"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.NewsletterLeave",
+      "application_event": [
+        "channel.left"
+      ],
+      "source": "events.go:647-651; ../../notification.go:397",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "channel ID/role; source event timestamp absent in JSON, envelope observation used"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.NewsletterMuteChange",
+      "application_event": [
+        "channel.muted"
+      ],
+      "source": "events.go:653-657; ../../notification.go:398",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "channel ID/on-off; no mute action"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.NewsletterLiveUpdate",
+      "application_event": [
+        "channel.updated"
+      ],
+      "source": "events.go:659-663; ../../notification.go:381-388",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "channel ID/counts/raw IDs; bounded100, never message body or claimed archive coverage"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.UndecryptableMessage",
+      "application_event": [
+        "message.unavailable"
+      ],
+      "source": "events.go:295-311; ../../message.go",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "observed chat/direction/ID; contentAvailable=false; no content reconstructed"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.NotifyAccountReachoutTimelock",
+      "application_event": [
+        "account.reachout_timelock"
+      ],
+      "source": "events.go:665-670; GOWS gows.go:232-248",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "account active/end; provider also actively fetches this on connection"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "gows.MessageCapping",
+      "application_event": [
+        "account.message_capping"
+      ],
+      "source": "GOWS capping.go:23-32; gows.go:278-295",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "quota/status/epoch fields only; provider polls independently, not proof of send permission"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.CallTerminate",
+      "application_event": [
+        "call.terminated"
+      ],
+      "source": "call.go:61-66; ../../call.go:89-94",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "callId/reason/from; group uses matching GroupJID and Data.Attrs[group-jid], missing/conflicting yields chatId=null; never caller DM; no raw nodes"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.Receipt",
+      "application_event": [
+        "message.receipt.self"
+      ],
+      "source": "events.go:440-452; ../presence.go:45-56",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "ONLY read-self/played-self; batch references, no singular ACK, group author mandatory for complete IDs"
+    },
+    {
+      "layer": "GOWS raw",
+      "provider_event": "events.GroupInfo",
+      "application_event": [
+        "group.v2.metadata"
+      ],
+      "source": "events.go:493-528; ../group.go:136-171",
+      "source_emission_bound": true,
+      "bridge_support": "implemented typed projection",
+      "offline_evidence": "test_provider_events.py::test_raw_event_reaches_authenticated_ingest_callback_schema_and_context",
+      "limit": "ONLY Locked/Ephemeral/Delete/Link/Unlink/Suspended/Unsuspended; already-public fields alone returnNone"
+    }
+  ]
+}

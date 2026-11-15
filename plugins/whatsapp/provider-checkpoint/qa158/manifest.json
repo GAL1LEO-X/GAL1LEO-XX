@@ -1,0 +1,58 @@
+{
+  "schema_version": 1,
+  "scope": "local PN/LID receipt diagnostic observation only; acceptance unchanged",
+  "base_provider_version": "0.8.4",
+  "candidate_provider_version": "0.8.5",
+  "base_backend_commit": "074ff1a37b946d8301e33daeaef6fa164dc36e68",
+  "gows": {
+    "base_tree": "34534b8195b56e8783c3eaab1063785ea70d76e4",
+    "candidate_tree": "471cfb35307b8a440d502abe7a9b18111696813d",
+    "patch_sha256": "a5178e83f8e58cc714815f45373a2937388696243d2421ae603ad774b8b77ab2",
+    "patch_bytes": 32760
+  },
+  "compiler_image": "sha256:1a7ac3af3af212f23b6a5c90d68268bfb80824694c16a44dab57c1ca12a73bde",
+  "go_version": "1.26.4",
+  "candidate_runtime_base": "sha256:a83a6b1784397c2b03e807372953bb9498fcadaedf5405110cf2af2c97d0089c",
+  "diagnostic_fields": [
+    "cached_chat_kind",
+    "receipt_chat_kind",
+    "cached_from_me",
+    "receipt_from_me",
+    "receipt_kind",
+    "alias_relation"
+  ],
+  "read_contract": {
+    "query_limit": 3,
+    "queries_per_observation_max": 1,
+    "wait_budget_per_receipt_ms": 50,
+    "inflight_per_store_max": 1,
+    "retries": 0,
+    "network_calls": 0,
+    "sql_adapter": "local SQLite only",
+    "unsupported_adapters": "mapping_unavailable"
+  },
+  "dependencies_changed": false,
+  "protobuf_changed": false,
+  "waha_changed": false,
+  "receipt_acceptance_changed": false,
+  "runtime_configuration_changed": false,
+  "qualification": {
+    "full_suite": "passed",
+    "full_pass_entries": 460,
+    "full_skip_entries": 29,
+    "race": "passed",
+    "race_pass_entries": 407,
+    "race_skip_entries": 29,
+    "race_scope": [
+      "./gows",
+      "./storage/..."
+    ],
+    "skip_reason": "preexisting ContextInfo message types not forwardable",
+    "static_analysis": "go vet -composites=false passed; two unchanged unkeyed-composite warnings excluded in storage/sqlstorage/entity.go",
+    "network": "none",
+    "live_accounts": false,
+    "source_go_inventory_sha256": "29faf6123734c9eff7d974fb4f81aad7a7e3d2b8cbe35b8f10f3d45ade750a83",
+    "native_build_runtime_and_installation": "separate receipts required; not attested by this source manifest"
+  },
+  "reapplication_verified": true
+}

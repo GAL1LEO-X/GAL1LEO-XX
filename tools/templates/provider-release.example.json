@@ -1,0 +1,151 @@
+{
+  "assets": [
+    {
+      "bytes": 0,
+      "name": "debian-corresponding-sources-0.7.0-01.tar.gz",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "debian_source_1",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bytes": 0,
+      "name": "debian-corresponding-sources-0.7.0-02.tar.gz",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "debian_source_2",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bytes": 0,
+      "name": "debian-corresponding-sources-0.7.0-03.tar.gz",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "debian_source_3",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bytes": 0,
+      "name": "debian-corresponding-sources-0.7.0-04.tar.gz",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "debian_source_4",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bytes": 0,
+      "name": "gows-corresponding-source-0.8.7.tar.gz",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "gows_source",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bytes": 0,
+      "name": "node-go-toolchain-source-0.7.0-01.tar.gz",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "toolchain_source",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bytes": 0,
+      "name": "waha-corresponding-source-0.8.7.tar.gz",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "waha_source",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bytes": 0,
+      "name": "whatsapp-npm-source-materials-0.7.0.tar.gz",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "npm_sources",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bytes": 0,
+      "name": "whatsapp-runtime-0.8.7-linux-amd64.oci.tar",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "runtime_oci",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    },
+    {
+      "bytes": 0,
+      "name": "whatsapp-source-evidence-notices-0.8.7.tar.gz",
+      "origin": {
+        "asset_id": null,
+        "kind": "reused",
+        "release_id": null,
+        "tag": "whatsapp-provider/v0.0.0"
+      },
+      "role": "source_notices",
+      "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+    }
+  ],
+  "fingerprint": {
+    "entries": [
+      {
+        "path": "plugins/whatsapp/provider-checkpoint/OPERATOR_QUALIFIED_INPUT",
+        "mode": "100644",
+        "bytes": 0,
+        "sha256": "0000000000000000000000000000000000000000000000000000000000000000"
+      }
+    ],
+    "scopes": [
+      "plugins/whatsapp/provider-checkpoint/",
+      "plugins/whatsapp/deploy/images.lock.json",
+      "plugins/whatsapp/deploy/whatsapp-waha.container"
+    ],
+    "sha256": "36bd51380bf74e4b0dd9353798c76feabb0fdc29dc1a1a94d2c726cfb8e89c16"
+  },
+  "repository": "GAL1LEO-X/GAL1LEO-XX",
+  "reuse_policy": "Unconfigured example only. Replace all placeholder IDs and hashes with independently reviewed artifact identities, prove the exact provider input fingerprint, and qualify the resulting runtime before allowing release preparation. This file does not attest any build, release, account, installation or deployment.",
+  "runtime": {
+    "config_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
+    "gows_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
+    "manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
+  },
+  "schema_version": 1,
+  "source_commit": "0000000000000000000000000000000000000000",
+  "source_release_id": null,
+  "source_tag": "whatsapp-provider/v0.0.0"
+}

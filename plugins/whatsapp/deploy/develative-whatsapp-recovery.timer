@@ -1,0 +1,10 @@
+[Unit]
+Description=Check interrupted WhatsApp administration after boot and periodically
+
+[Timer]
+OnBootSec=45s
+OnUnitInactiveSec=60s
+Unit=develative-whatsapp-recovery.service
+
+[Install]
+WantedBy=timers.target

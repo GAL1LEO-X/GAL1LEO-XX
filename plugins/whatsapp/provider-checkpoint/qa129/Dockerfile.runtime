@@ -1,0 +1,6 @@
+# Incremental application build from the exact qualified provider 0.8.2 image.
+# The caller must verify a complete, freshly compiled dist inventory: no removed
+# files, no dependency/entrypoint changes, and the inherited GOWS binary digest.
+# Source and dependency provenance remain in the corresponding-source archives.
+FROM sha256:d0fb209980f52f79ef4586c97c4d67a910183026fbcb61264e6bd437ffa97a10
+COPY --chown=0:0 waha/dist/ /app/dist/

@@ -1,0 +1,214 @@
+diff --git a/src/gows/storage_event_handler.go b/src/gows/storage_event_handler.go
+index fb970e8..c68c8a1 100644
+--- a/src/gows/storage_event_handler.go
++++ b/src/gows/storage_event_handler.go
+@@ -303,8 +303,23 @@ func (st *StorageEventHandler) handleReceipt(event *events.Receipt) {
+ 			st.log.Debugf("Error getting message - storage handle receipt %v(%v): %v", event.Chat, id, err)
+ 			continue
+ 		}
+-		if msg == nil || msg.Message == nil || msg.Info.Chat.ToNonAD() != event.Chat.ToNonAD() || !msg.Info.IsFromMe {
+-			st.log.Warnf("Ignoring receipt whose chat/direction does not match cached message %v", id)
++		// Preserve the rejection predicate and check chat identity before treating
++		// an incoming message as a routine, inapplicable receipt. Diagnostics use
++		// finite reasons only, without message IDs, chat IDs or payloads.
++		if msg == nil {
++			st.log.Warnf("receipt.cache.skipped reason=missing_cached_record")
++			continue
++		}
++		if msg.Message == nil {
++			st.log.Warnf("receipt.cache.skipped reason=missing_cached_message")
++			continue
++		}
++		if msg.Info.Chat.ToNonAD() != event.Chat.ToNonAD() {
++			st.log.Warnf("receipt.cache.skipped reason=chat_mismatch")
++			continue
++		}
++		if !msg.Info.IsFromMe {
++			st.log.Debugf("receipt.cache.skipped reason=not_outbound")
+ 			continue
+ 		}
+ 		if msg.Status != nil && *msg.Status >= status {
+diff --git a/src/gows/storage_receipt_diagnostics_test.go b/src/gows/storage_receipt_diagnostics_test.go
+new file mode 100644
+index 0000000..66cc85b
+--- /dev/null
++++ b/src/gows/storage_receipt_diagnostics_test.go
+@@ -0,0 +1,178 @@
++package gows
++
++import (
++	"errors"
++	"fmt"
++	"strings"
++	"testing"
++
++	"github.com/devlikeapro/gows/storage"
++	"github.com/devlikeapro/gows/storage/noop"
++	"go.mau.fi/whatsmeow/types"
++	"go.mau.fi/whatsmeow/types/events"
++	waLog "go.mau.fi/whatsmeow/util/log"
++)
++
++type receiptLogEntry struct{ level, text string }
++type receiptLogSpy struct{ entries []receiptLogEntry }
++
++func (l *receiptLogSpy) add(level, format string, args ...interface{}) {
++	l.entries = append(l.entries, receiptLogEntry{level, fmt.Sprintf(format, args...)})
++}
++func (l *receiptLogSpy) Errorf(f string, a ...interface{}) { l.add("error", f, a...) }
++func (l *receiptLogSpy) Warnf(f string, a ...interface{})  { l.add("warn", f, a...) }
++func (l *receiptLogSpy) Infof(f string, a ...interface{})  { l.add("info", f, a...) }
++func (l *receiptLogSpy) Debugf(f string, a ...interface{}) { l.add("debug", f, a...) }
++func (l *receiptLogSpy) Sub(_ string) waLog.Logger         { return l }
++func (l *receiptLogSpy) diagnostic() []receiptLogEntry {
++	var result []receiptLogEntry
++	for _, e := range l.entries {
++		if strings.HasPrefix(e.text, "receipt.cache.skipped ") {
++			result = append(result, e)
++		}
++	}
++	return result
++}
++
++type receiptMessagesSpy struct {
++	*noop.MessageStorage
++	messages   map[types.MessageID]*storage.StoredMessage
++	readErrors map[types.MessageID]error
++	writes     int
++	writeError error
++}
++
++func (s *receiptMessagesSpy) GetMessageWithRetries(id types.MessageID) (*storage.StoredMessage, error) {
++	return s.messages[id], s.readErrors[id]
++}
++func (s *receiptMessagesSpy) UpsertOneMessage(_ *storage.StoredMessage) error {
++	s.writes++
++	return s.writeError
++}
++func receiptStored(chat types.JID, own bool, status *storage.Status) *storage.StoredMessage {
++	return &storage.StoredMessage{Message: &events.Message{Info: types.MessageInfo{MessageSource: types.MessageSource{Chat: chat, IsFromMe: own}}}, Status: status}
++}
++func receiptHandler(messages map[types.MessageID]*storage.StoredMessage) (*StorageEventHandler, *receiptMessagesSpy, *receiptLogSpy) {
++	s := &receiptMessagesSpy{MessageStorage: noop.NewMessageStorage(), messages: messages, readErrors: map[types.MessageID]error{}}
++	l := &receiptLogSpy{}
++	return &StorageEventHandler{storage: &storage.Storage{Messages: s}, log: l}, s, l
++}
++func TestReceiptDiagnosticClassification(t *testing.T) {
++	chat := types.NewJID("10001", types.DefaultUserServer)
++	other := types.NewJID("10002", types.DefaultUserServer)
++	ad := chat
++	ad.Device = 7
++	cases := []struct {
++		name          string
++		msg           *storage.StoredMessage
++		level, reason string
++		writes        int
++	}{
++		{"missing-record", nil, "warn", "missing_cached_record", 0},
++		{"missing-wrapper-message", &storage.StoredMessage{}, "warn", "missing_cached_message", 0},
++		{"wrong-chat-outgoing", receiptStored(other, true, nil), "warn", "chat_mismatch", 0},
++		{"wrong-chat-incoming-keeps-warning", receiptStored(other, false, nil), "warn", "chat_mismatch", 0},
++		{"incoming-same-chat", receiptStored(chat, false, nil), "debug", "not_outbound", 0},
++		{"incoming-ad-same-chat", receiptStored(ad, false, nil), "debug", "not_outbound", 0},
++		{"outgoing-same-chat", receiptStored(chat, true, nil), "", "", 1},
++		{"outgoing-ad-same-chat", receiptStored(ad, true, nil), "", "", 1},
++	}
++	for _, tc := range cases {
++		t.Run(tc.name, func(t *testing.T) {
++			id := types.MessageID("synthetic-private-id-never-in-new-diagnostic")
++			h, s, l := receiptHandler(map[types.MessageID]*storage.StoredMessage{id: tc.msg})
++			h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: chat}, MessageIDs: []types.MessageID{id}, Type: types.ReceiptTypeRead})
++			if s.writes != tc.writes {
++				t.Fatalf("writes=%d want %d", s.writes, tc.writes)
++			}
++			records := l.diagnostic()
++			if tc.reason == "" {
++				if len(records) != 0 {
++					t.Fatal("valid receipt unexpectedly skipped")
++				}
++				return
++			}
++			if len(records) != 1 || records[0].level != tc.level || records[0].text != "receipt.cache.skipped reason="+tc.reason {
++				t.Fatalf("diagnostic=%v want %s/%s", records, tc.level, tc.reason)
++			}
++			if strings.Contains(records[0].text, string(id)) || strings.Contains(records[0].text, chat.String()) {
++				t.Fatal("new diagnostic leaked an identifier")
++			}
++			if tc.msg != nil && tc.msg.Status != nil {
++				t.Fatal("rejected receipt modified cached status")
++			}
++		})
++	}
++}
++func TestReceiptStatusProgressionUnchanged(t *testing.T) {
++	chat := types.NewJID("10001", types.DefaultUserServer)
++	for _, step := range []struct {
++		kind   types.ReceiptType
++		status storage.Status
++	}{{types.ReceiptTypeDelivered, storage.StatusDeliveryAck}, {types.ReceiptTypeRead, storage.StatusRead}, {types.ReceiptTypePlayed, storage.StatusPlayed}} {
++		for _, old := range []storage.Status{-1, storage.StatusServerAck, storage.StatusPlayed} {
++			t.Run(fmt.Sprintf("%s/%d", step.kind, old), func(t *testing.T) {
++				previous := old
++				var pointer *storage.Status
++				if old >= 0 {
++					pointer = &previous
++				}
++				m := receiptStored(chat, true, pointer)
++				h, s, l := receiptHandler(map[types.MessageID]*storage.StoredMessage{"id": m})
++				h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: chat}, MessageIDs: []types.MessageID{"id"}, Type: step.kind})
++				want := 0
++				if old < step.status {
++					want = 1
++				}
++				if s.writes != want || len(l.diagnostic()) != 0 {
++					t.Fatalf("writes=%d want=%d", s.writes, want)
++				}
++				if want == 1 && (m.Status == nil || *m.Status != step.status) {
++					t.Fatal("status not advanced")
++				}
++				if want == 0 && *m.Status != old {
++					t.Fatal("status regressed")
++				}
++			})
++		}
++	}
++}
++func TestReceiptReadErrorsAndIgnoredTypesDoNotWrite(t *testing.T) {
++	chat := types.NewJID("10001", types.DefaultUserServer)
++	for _, readError := range []error{storage.ErrNotFound, errors.New("synthetic read failure")} {
++		h, s, l := receiptHandler(map[types.MessageID]*storage.StoredMessage{"id": receiptStored(chat, true, nil)})
++		s.readErrors["id"] = readError
++		h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: chat}, MessageIDs: []types.MessageID{"id"}, Type: types.ReceiptTypeRead})
++		if s.writes != 0 || len(l.diagnostic()) != 0 {
++			t.Fatal("read error wrote or was mislabeled")
++		}
++	}
++	for _, event := range []*events.Receipt{
++		{MessageSource: types.MessageSource{Chat: chat}, MessageIDs: []types.MessageID{"id"}, Type: types.ReceiptType("unknown-fixture")},
++		{MessageSource: types.MessageSource{Chat: types.StatusBroadcastJID}, MessageIDs: []types.MessageID{"id"}, Type: types.ReceiptTypeRead},
++	} {
++		h, s, l := receiptHandler(map[types.MessageID]*storage.StoredMessage{"id": receiptStored(chat, true, nil)})
++		h.handleReceipt(event)
++		if s.writes != 0 || len(l.diagnostic()) != 0 {
++			t.Fatal("ignored event wrote or was mislabeled")
++		}
++	}
++}
++func TestReceiptRejectedEntryDoesNotBlockNextAndWriteFailureIsNotRetried(t *testing.T) {
++	chat := types.NewJID("10001", types.DefaultUserServer)
++	h, s, l := receiptHandler(map[types.MessageID]*storage.StoredMessage{"incoming": receiptStored(chat, false, nil), "outgoing": receiptStored(chat, true, nil)})
++	s.writeError = errors.New("synthetic write failure")
++	h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: chat}, MessageIDs: []types.MessageID{"incoming", "outgoing"}, Type: types.ReceiptTypeRead})
++	if s.writes != 1 || len(l.diagnostic()) != 1 || l.diagnostic()[0].level != "debug" {
++		t.Fatal("batch handling or retry behavior changed")
++	}
++	found := false
++	for _, e := range l.entries {
++		if e.level == "error" {
++			found = true
++		}
++	}
++	if !found {
++		t.Fatal("write failure not logged")
++	}
++}

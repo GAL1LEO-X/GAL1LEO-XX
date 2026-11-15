@@ -1,0 +1,88 @@
+"""Install the authorized Develative bridge, initially with WhatsApp disabled.
+
+Existing authentication and unrelated services are not changed by this script.
+Run once as root from the deployed project virtual environment.
+"""
+from pathlib import Path
+import grp
+import json
+import os
+import pwd
+import secrets
+import shutil
+import subprocess
+import sys
+from cryptography.fernet import Fernet
+
+ROOT = Path('/srv/openai-codex/projects/whatsapp-personal')
+HOME = Path('/var/lib/whatsapp-personal-waha')
+CONF = Path('/etc/whatsapp-personal')
+USER = 'whatsappbridge'
+os.umask(0o077)
+try:
+    account = pwd.getpwnam(USER)
+except KeyError:
+    subprocess.run(['useradd', '--system', '--create-home', '--home-dir', str(HOME),
+                    '--shell', '/usr/sbin/nologin', USER], check=True)
+    account = pwd.getpwnam(USER)
+if account.pw_dir != str(HOME):
+    raise SystemExit('Existing service user has unexpected home')
+uid, gid = account.pw_uid, account.pw_gid
+# Grant this one service traversal through the otherwise root-only project area.
+# Other project directories and this project's private/ directory remain closed.
+subprocess.run(['setfacl', '-m', f'u:{USER}:--x', '/srv/openai-codex',
+                '/srv/openai-codex/projects'], check=True)
+subprocess.run(['setfacl', '-m', f'u:{USER}:r-x', str(ROOT)], check=True)
+for path, flag in [('/etc/subuid', '--add-subuids'), ('/etc/subgid', '--add-subgids')]:
+    ranges = [line.split(':') for line in Path(path).read_text().splitlines() if line]
+    if not any(v[0] == USER for v in ranges):
+        start = max([100000] + [int(v[1]) + int(v[2]) for v in ranges])
+        subprocess.run(['usermod', flag, f'{start}-{start + 65535}', USER], check=True)
+
+for path, mode in [(CONF, 0o750), (Path('/var/lib/whatsapp-personal'), 0o700),
+                   (HOME, 0o700), (HOME / 'sessions', 0o700), (HOME / 'media', 0o700),
+                   (HOME / '.config', 0o700), (HOME / '.config/containers', 0o700),
+                   (HOME / '.config/containers/systemd', 0o700)]:
+    path.mkdir(parents=True, exist_ok=True)
+    os.chown(path, 0 if path == CONF else uid, gid)
+    os.chmod(path, mode)
+for name in ['webhook.key', 'encryption.key', 'waha.key']:
+    path = CONF / name
+    if not path.exists():
+        path.write_text(Fernet.generate_key().decode() if name == 'encryption.key' else secrets.token_hex(32))
+    os.chown(path, 0, gid)
+    os.chmod(path, 0o640)
+cfgpath = CONF / 'config.toml'
+if cfgpath.exists():
+    raise SystemExit('Configuration already exists; inspect before changing it')
+identity = json.loads((ROOT / 'private/identity.json').read_text())
+cfg = (ROOT / 'deploy/bridge.example.toml').read_text()
+cfg = cfg.replace('https://YOUR-OAUTH-ISSUER.example/.well-known/jwks.json',
+                  'https://identity.example.invalid/jwks.json')
+cfg = cfg.replace('https://YOUR-OAUTH-ISSUER.example', 'https://identity.example.invalid')
+cfg = cfg.replace('REPLACE_WITH_EXACT_OAUTH_SUBJECT', identity['subject'])
+cfgpath.write_text(cfg)
+os.chown(cfgpath, 0, gid)
+os.chmod(cfgpath, 0o640)
+
+wrapper = ROOT / 'scripts/as-user'
+wrapper.write_text(f'#!/bin/sh\nset -eu\ncd {HOME}\nexec runuser -u {USER} -- env HOME={HOME} XDG_RUNTIME_DIR=/run/user/{uid} DBUS_SESSION_BUS_ADDRESS=unix:path=/run/user/{uid}/bus "$@"\n')
+os.chmod(wrapper, 0o755)
+unit = Path('/etc/systemd/system/whatsapp-personal.service')
+shutil.copyfile(ROOT / 'deploy/whatsapp-personal.service', unit)
+os.chmod(unit, 0o644)
+quadlet = HOME / '.config/containers/systemd/whatsapp-waha.container'
+shutil.copyfile(ROOT / 'prepared/whatsapp-waha.container', quadlet)
+os.chown(quadlet, uid, gid)
+os.chmod(quadlet, 0o600)
+subprocess.run([sys.executable,str(ROOT/'scripts/resource_priority.py'),'enroll','--user',USER,'--apply'],check=True)
+subprocess.run(['loginctl', 'enable-linger', USER], check=True)
+subprocess.run(['systemctl', 'start', f'user@{uid}.service'], check=True)
+subprocess.run([str(wrapper), 'podman', 'secret', 'create', 'whatsapp-waha-api-key', str(CONF / 'waha.key')], check=True, capture_output=True)
+subprocess.run([str(wrapper), 'podman', 'secret', 'create', 'whatsapp-waha-disabled-ui-key', '-'],
+               input=secrets.token_hex(32), text=True, check=True, capture_output=True)
+subprocess.run(['systemctl', 'daemon-reload'], check=True)
+subprocess.run(['systemctl', 'enable', '--now', 'whatsapp-personal.service'], check=True)
+subprocess.run([str(wrapper), 'systemctl', '--user', 'daemon-reload'], check=True)
+print(json.dumps({'service_user': USER, 'uid': uid, 'bridge_started': True,
+                  'whatsapp_account_enabled': False, 'waha_started': False}))

@@ -1,0 +1,8 @@
+{
+  "format": 1,
+  "provider": "develative-host-qos",
+  "owner": "host",
+  "component_version": "0.1.0",
+  "policy": null,
+  "consumers": {}
+}

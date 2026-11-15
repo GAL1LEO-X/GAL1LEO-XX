@@ -1,0 +1,69 @@
+{
+  "schema": 1,
+  "project": "project-name",
+  "target": "gal1leo-server-01",
+  "mode": "fresh",
+  "version": "0.1.0",
+  "previous_version": null,
+  "evidence": {
+    "source_sha": null,
+    "inventory_reference": null,
+    "observed_state": null
+  },
+  "packages": [],
+  "directories": [
+    {
+      "path": "/srv/project-name",
+      "owner": "project-name",
+      "mode": "0750",
+      "purpose": "project data; qualify layout against real evidence"
+    }
+  ],
+  "users": [
+    {
+      "name": "project-name",
+      "system": true,
+      "login": false
+    }
+  ],
+  "secret_refs": [
+    "github-environment:GAL1LEO-X/GAL1LEO-XX/gal1leo-server-01/GAL1LEO_SSH_KEY"
+  ],
+  "services": [
+    {
+      "name": "project-name.service",
+      "user": "project-name",
+      "definition_reference": null,
+      "action": "create"
+    }
+  ],
+  "healthchecks": [
+    {
+      "reference": null,
+      "expected": null,
+      "stage": "after"
+    },
+    {
+      "reference": null,
+      "expected": null,
+      "stage": "restore"
+    }
+  ],
+  "preserve": [
+    "/srv/project-name"
+  ],
+  "backup": {
+    "procedure_reference": null,
+    "verification": null
+  },
+  "rollback": {
+    "procedure_reference": null,
+    "verification": null
+  },
+  "route": {
+    "kind": "provisioning",
+    "script": null,
+    "reviewed_main": null,
+    "reviewed_sha256": null
+  }
+}

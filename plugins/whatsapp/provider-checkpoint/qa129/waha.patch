@@ -1,0 +1,291 @@
+diff --git a/checkpoints/offline-ab/qa125.test.cjs b/checkpoints/offline-ab/qa125.test.cjs
+index f317884..b3ebd02 100644
+--- a/checkpoints/offline-ab/qa125.test.cjs
++++ b/checkpoints/offline-ab/qa125.test.cjs
+@@ -29,6 +29,7 @@ for (const cause of ['disconnected','keepalive_timeout']) {
+   const Fixture=fixture(methods,{WAHASessionStatus:{STARTING:'STARTING',WORKING:'WORKING'}});
+   const session=new Fixture();session.status='WORKING';const rows=[];
+   session.logger={warn:(fields)=>rows.push({level:'warning',...fields}),info:(fields)=>rows.push({level:'info',...fields})};
++  session.logger.child=()=>session.logger;
+   session.observeTransportStatus('STARTING',cause);session.observeTransportStatus('STARTING',cause);
+   session.observeTransportStatus('WORKING','connected');
+   assert.equal(session.status,'WORKING');assert.equal(rows.length,2);
+diff --git a/checkpoints/offline-ab/qa129.test.cjs b/checkpoints/offline-ab/qa129.test.cjs
+new file mode 100644
+index 0000000..08b01c0
+--- /dev/null
++++ b/checkpoints/offline-ab/qa129.test.cjs
+@@ -0,0 +1,180 @@
++// Actual TypeScript source, real Axios retry interceptor and Pino. All I/O is
++// an in-memory adapter; no WhatsApp session, socket, account or production URL.
++const test = require('node:test');
++const assert = require('node:assert/strict');
++const fs = require('node:fs');
++const path = require('node:path');
++const vm = require('node:vm');
++const crypto = require('node:crypto');
++const ts = require('typescript');
++const axios = require('axios');
++const pino = require('pino');
++const root = path.resolve(__dirname, '../..');
++const senderFile = path.join(root, 'src/modules/waha-webhook/WebhookPlugin.sender.ts');
++const code = ts.transpileModule(fs.readFileSync(senderFile, 'utf8'), {
++  compilerOptions: {module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2020},
++}).outputText;
++const moduleFixture = {exports: {}};
++vm.runInNewContext(code, {
++  exports: moduleFixture.exports, module: moduleFixture,
++  require(name) {
++    if (name === '@waha/structures/enums.dto') return {SECOND: 1000};
++    if (name === '@waha/structures/webhooks.config.dto') return {RetryPolicy: {LINEAR: 'linear', CONSTANT: 'constant', EXPONENTIAL: 'exponential'}};
++    if (name === '@waha/version') return {VERSION: {version: 'synthetic'}};
++    return require(name);
++  },
++}, {filename: senderFile});
++const {WebhookSender, permanentEventRejection} = moduleFixture.exports;
++const permanent = {
++  error: 'invalid_event', contract: 'gal1leo.webhook-rejection.v1',
++  error_code: 'EVENT_ENGINE_VALIDATION', retryable: false,
++};
++const ref = value => crypto.createHash('sha256').update(value).digest('hex').slice(0, 16);
++
++function senderFixture(responses, retries) {
++  const rows = [], requests = [];
++  let complete;
++  const done = new Promise(resolve => { complete = resolve; });
++  const logger = {};
++  for (const level of ['debug', 'info', 'warn', 'error']) {
++    logger[level] = (fields, message) => {
++      rows.push({level, fields, message});
++      if (level === 'error' || (level === 'info' && message?.startsWith('POST request was sent'))) complete();
++    };
++  }
++  const sender = new WebhookSender({child: () => logger}, {
++    url: 'https://synthetic.invalid/webhook', hmac: {key: 'synthetic-hmac-key'},
++    retries: {delaySeconds: 0, ...(retries === undefined ? {} : {attempts: retries})},
++  });
++  sender.axios.defaults.adapter = async config => {
++    requests.push({data: config.data, id: config.headers.get('X-Webhook-Request-Id'), hmac: config.headers.get('X-Webhook-Hmac')});
++    const value = responses[Math.min(requests.length - 1, responses.length - 1)];
++    if (value.network) throw new axios.AxiosError('synthetic network failure', 'ECONNRESET', config);
++    const response = {status: value.status, data: value.data, headers: value.headers || {}, config};
++    if (value.status >= 400) throw new axios.AxiosError('synthetic response failure', 'ERR_BAD_RESPONSE', config, {}, response);
++    return response;
++  };
++  return {sender, requests, rows, done};
++}
++
++for (const code of ['EVENT_JSON', 'EVENT_ENVELOPE', 'EVENT_UNSUPPORTED', 'EVENT_ID',
++  'MESSAGE_ID_DIRECTION', 'MESSAGE_CHAT_TIME', 'MESSAGE_BODY', 'MESSAGE_MEDIA',
++  'SESSION_STATUS', 'MESSAGE_EDIT', 'EVENT_ENGINE_VALIDATION']) {
++  test('explicit deterministic rejection is terminal: ' + code, () => {
++    assert.equal(permanentEventRejection({response: {status: 400, data: {...permanent, error_code: code}}}), code);
++  });
++}
++
++for (const [name, status, data] of [
++  ['old receiver', 400, {error: 'invalid_event'}],
++  ['unknown error code', 400, {...permanent, error_code: 'EVENT_SESSION'}],
++  ['unknown protocol', 400, {...permanent, contract: 'other.v1'}],
++  ['retryable', 400, {...permanent, retryable: true}],
++  ['ambiguous retry value', 400, {...permanent, retryable: 'false'}],
++  ['wrong error', 400, {...permanent, error: 'internal_error'}],
++  ['plain text', 400, 'private non-json response'],
++  ['array', 400, [permanent]],
++  ['authentication', 401, permanent],
++  ['permission', 403, permanent],
++  ['throttling', 429, permanent],
++  ['temporary failure', 503, permanent],
++]) {
++  test('unrecognized/transient response retains retry: ' + name, async () => {
++    assert.equal(permanentEventRejection({response: {status, data}}), undefined);
++    const f = senderFixture([{status, data}, {status: 200, data: {accepted: true}}], 2);
++    f.sender.send({id: 'synthetic-event', event: 'engine.event'});
++    await f.done;
++    assert.equal(f.requests.length, 2);
++    assert.equal(f.rows.filter(r => r.fields?.event === 'webhook.delivery.rejected').length, 0);
++  });
++}
++
++test('one terminal record, bounded hashes, no payload/URL and no success', async () => {
++  const f = senderFixture([{status: 400, data: {...permanent, private: 'private-receiver-body'}}]);
++  const event = {id: 'private-event-identifier', event: 'engine.event', payload: {private: 'private-message'}};
++  f.sender.send(event);
++  await f.done;
++  assert.equal(f.requests.length, 1);
++  const errors = f.rows.filter(r => r.level === 'error');
++  assert.equal(errors.length, 1);
++  const record = errors[0].fields;
++  assert.equal(record.outcome, 'terminal_validation_rejection');
++  assert.equal(record.attempts, 1);
++  assert.equal(record.event_ref, ref(event.id));
++  assert.equal(record.delivery_ref, ref(f.requests[0].id));
++  assert.equal(record.error_code, 'EVENT_ENGINE_VALIDATION');
++  assert.equal(JSON.stringify(errors).includes('private-'), false);
++  assert.equal(JSON.stringify(errors).includes('https://'), false);
++  assert.equal(f.rows.some(r => r.message?.startsWith('POST request was sent')), false);
++  assert.equal(f.requests[0].hmac, crypto.createHmac('sha512', 'synthetic-hmac-key').update(f.requests[0].data).digest('hex'));
++});
++
++test('a transient attempt followed by deterministic rejection stops at two', async () => {
++  const f = senderFixture([{status: 503}, {status: 400, data: permanent}]);
++  f.sender.send({id: 'synthetic-event', event: 'engine.event'});
++  await f.done;
++  assert.equal(f.requests.length, 2);
++  assert.equal(f.rows.at(-1).fields.attempts, 2);
++  assert.equal(f.requests[0].id, f.requests[1].id);
++  assert.equal(f.requests[0].hmac, f.requests[1].hmac);
++  assert.equal(f.requests[0].data, f.requests[1].data);
++});
++
++test('default legacy 400 still has 1 + 15 attempts', async () => {
++  const f = senderFixture([{status: 400, data: {error: 'invalid_event'}}]);
++  f.sender.send({id: 'synthetic-event', event: 'engine.event'});
++  await f.done;
++  assert.equal(f.requests.length, 16);
++});
++
++test('network failures retry and the configured budget is respected', async () => {
++  const f = senderFixture([{network: true}], 2);
++  f.sender.send({id: 'synthetic-event', event: 'engine.event'});
++  await f.done;
++  assert.equal(f.requests.length, 3);
++});
++
++test('Retry-After survives the selective retry change', () => {
++  const f = senderFixture([{status: 200}]);
++  const delay = f.sender.buildRetryDelay('constant', 0);
++  assert.ok(delay(1, {response: {headers: {'retry-after': '2'}}}) >= 2000);
++});
++
++const sessionFile = path.join(root, 'src/core/engines/gows/session.gows.core.ts');
++const source = ts.createSourceFile(sessionFile, fs.readFileSync(sessionFile, 'utf8'), ts.ScriptTarget.Latest, true);
++const klass = source.statements.find(s => ts.isClassDeclaration(s) && s.name.text === 'WhatsappSessionGoWSCore');
++const method = klass.members.find(m => ts.isMethodDeclaration(m) && m.name.getText(source) === 'observeTransportStatus');
++assert.ok(method);
++const fixtureCode = ts.transpileModule('class Fixture {' + method.getText(source) + '}', {
++  compilerOptions: {target: ts.ScriptTarget.ES2020},
++}).outputText;
++const Session = vm.runInNewContext(fixtureCode + '\nFixture', {WAHASessionStatus: {STARTING: 'STARTING', WORKING: 'WORKING'}});
++for (const level of ['debug', 'info', 'warn', 'error', 'fatal', 'silent']) {
++  for (const [down, up] of [['disconnected', 'connected'], ['keepalive_timeout', 'keepalive_restored']]) {
++    test('paired transport telemetry, parent level unchanged: '+level+' '+down, () => {
++      const rows = [];
++      const session = new Session();
++      session.status = 'WORKING';
++      session.logger = pino({level, base: null, timestamp: false}, {write: line => rows.push(JSON.parse(line))});
++      session.observeTransportStatus('STARTING', down);
++      session.observeTransportStatus('STARTING', down);
++      session.observeTransportStatus('WORKING', up);
++      session.observeTransportStatus('WORKING', up);
++      assert.equal(session.status, 'WORKING');
++      assert.equal(session.logger.level, level);
++      const expected = ['debug', 'info', 'warn'].includes(level) ? 2 : 0;
++      assert.equal(rows.length, expected);
++      if (expected) {
++        assert.deepEqual(rows.map(r => r.state), ['STARTING', 'WORKING']);
++        assert.deepEqual(rows.map(r => r.level), [40, 30]);
++        assert.deepEqual(rows.map(r => r.cause), [down, up]);
++        assert.deepEqual(rows.map(r => r.previous_state), ['WORKING', 'STARTING']);
++        for (const row of rows) assert.deepEqual(Object.keys(row).sort(), ['cause','component','event','level','msg','previous_state','state']);
++      }
++      if (level === 'warn') {
++        session.logger.info({private: 'unrelated-info'}, 'still filtered');
++        assert.equal(rows.length, 2);
++      }
++    });
++  }
++}
+diff --git a/src/core/engines/gows/session.gows.core.ts b/src/core/engines/gows/session.gows.core.ts
+index 50fa3f4..429bbe3 100644
+--- a/src/core/engines/gows/session.gows.core.ts
++++ b/src/core/engines/gows/session.gows.core.ts
+@@ -439,11 +439,19 @@ export class WhatsappSessionGoWSCore extends WhatsappSession {
+       previous_state: previous,
+       cause,
+     };
++    // This child emits both halves of a transport interruption at the deployed
++    // warn threshold. It changes neither the parent nor other session logging;
++    // recovery remains informational, not another warning. Stricter error/fatal
++    // and silent configurations are still respected.
++    const telemetry = this.logger.child(
++      { component: 'transport' },
++      { level: this.logger.level === 'warn' ? 'info' : this.logger.level },
++    );
+     // Fixed technical fields only: never log the event envelope or account data.
+     if (next === WAHASessionStatus.STARTING) {
+-      this.logger.warn(fields, 'WhatsApp transport state changed');
++      telemetry.warn(fields, 'WhatsApp transport state changed');
+     } else {
+-      this.logger.info(fields, 'WhatsApp transport state changed');
++      telemetry.info(fields, 'WhatsApp transport state changed');
+     }
+   }
+ 
+diff --git a/src/modules/waha-webhook/WebhookPlugin.sender.ts b/src/modules/waha-webhook/WebhookPlugin.sender.ts
+index 1f6e526..ce0d172 100644
+--- a/src/modules/waha-webhook/WebhookPlugin.sender.ts
++++ b/src/modules/waha-webhook/WebhookPlugin.sender.ts
+@@ -21,6 +21,33 @@ const DEFAULT_RETRY_DELAY_SECONDS = 2;
+ const DEFAULT_RETRY_ATTEMPTS = 15;
+ const DEFAULT_HMAC_ALGORITHM = 'sha512';
+ 
++// Explicit bridge handshake only. Generic 400s, old bridges and temporary
++// failures retain the configured retry policy, including Retry-After.
++const PERMANENT_EVENT_CODES = new Set([
++  'EVENT_JSON', 'EVENT_ENVELOPE', 'EVENT_UNSUPPORTED', 'EVENT_ID',
++  'MESSAGE_ID_DIRECTION', 'MESSAGE_CHAT_TIME', 'MESSAGE_BODY', 'MESSAGE_MEDIA',
++  'SESSION_STATUS', 'MESSAGE_EDIT', 'EVENT_ENGINE_VALIDATION',
++]);
++
++export function permanentEventRejection(error: any): string | undefined {
++  const response = error?.response;
++  const data = response?.data;
++  if (
++    response?.status === 400 && data && typeof data === 'object' &&
++    !Array.isArray(data) && data.contract === 'gal1leo.webhook-rejection.v1' &&
++    data.error === 'invalid_event' && data.retryable === false &&
++    PERMANENT_EVENT_CODES.has(data.error_code)
++  ) {
++    return data.error_code;
++  }
++  return undefined;
++}
++
++function diagnosticReference(value: any): string | undefined {
++  if (typeof value !== 'string' || !value.length || value.length > 512) return undefined;
++  return crypto.createHash('sha256').update(value).digest('hex').slice(0, 16);
++}
++
+ function noDelay(_retryNumber = 0, error: any) {
+   return Math.max(0, retryAfter(error));
+ }
+@@ -94,6 +121,19 @@ export class WebhookSender {
+         );
+       })
+       .catch((error) => {
++        const code = permanentEventRejection(error);
++        if (code) {
++          this.logger.error({
++            event: 'webhook.delivery.rejected',
++            outcome: 'terminal_validation_rejection',
++            error_code: code,
++            status: 400,
++            event_ref: diagnosticReference(json.id),
++            delivery_ref: diagnosticReference(headers['X-Webhook-Request-Id']),
++            attempts: (error.config?.['axios-retry']?.retryCount ?? 0) + 1,
++          }, 'Webhook delivery rejected by receiver validation');
++          return;
++        }
+         this.logger.error(
+           {
+             ...ctx,
+@@ -132,7 +172,7 @@ export class WebhookSender {
+     axiosRetry(instance, {
+       retries: attempts,
+       retryDelay: retryDelay,
+-      retryCondition: (error) => true,
++      retryCondition: (error) => permanentEventRejection(error) === undefined,
+       onRetry: (retryCount, error, requestConfig) => {
+         this.logger.warn(
+           {

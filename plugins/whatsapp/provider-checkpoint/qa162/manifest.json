@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "scope": "transactionally verified personal PN/LID receipt cache advancement; qualified release candidate",
+  "base_provider_version": "0.8.5",
+  "base_backend_version": "0.8.9",
+  "release_status": "qualified_candidate_not_yet_published_or_installed",
+  "base_source_archive_sha256": "439c93ecd077b25a688334ffef6c4075c58a9bfafa28caf7ea4509b6e74ce5ed",
+  "base_gows_tree": "471cfb35307b8a440d502abe7a9b18111696813d",
+  "compiler_image": "sha256:1a7ac3af3af212f23b6a5c90d68268bfb80824694c16a44dab57c1ca12a73bde",
+  "go_version": "1.26.4",
+  "patch_sha256": "8f79dad70e5c264472df06f581bc4b9b9a0cca05f802eddb425c1412cffb5cdc",
+  "patch_bytes": 21071,
+  "changed_paths": [
+    "src/gows/storage_event_handler.go",
+    "src/gows/storage_receipt_verified_test.go",
+    "src/storage/receipt_update.go",
+    "src/storage/sqlstorage/message.go",
+    "src/storage/sqlstorage/receipt_update.go",
+    "src/storage/sqlstorage/receipt_update_test.go"
+  ],
+  "qualification": {
+    "focused-repro-v2": {
+      "returncode": 1,
+      "source_go_inventory_sha256": "b634efd04e5eccff5eb81d3e5c1473775ff6682800b4569c7037681f9b949d1e",
+      "pass_entries": 159,
+      "skip_entries": 0,
+      "failed_tests": [
+        "TestReceiptVerifiedAliasAdvancesRealCache"
+      ],
+      "log_sha256": "d494d2a787c26b2da2643e58177bd138ff42fa6365586ae545e773566cc99e22"
+    },
+    "full-final": {
+      "returncode": 0,
+      "source_go_inventory_sha256": "a0c158a2405b7e330ca7f0838bb83be1085056d8554d8416134e956911d1e018",
+      "pass_entries": 489,
+      "skip_entries": 29,
+      "failed_tests": [],
+      "log_sha256": "3ea2a9b4bf7109f5f36f10bb51427820cabb5d40cc79d04486aa568b139384e1"
+    },
+    "race-final": {
+      "returncode": 0,
+      "source_go_inventory_sha256": "a0c158a2405b7e330ca7f0838bb83be1085056d8554d8416134e956911d1e018",
+      "pass_entries": 436,
+      "skip_entries": 29,
+      "failed_tests": [],
+      "log_sha256": "413354dc93ce9cb0104300c92276cbdc92c03e30af5430af9724659f327a7a48"
+    },
+    "static_analysis": {
+      "command": "go vet -mod=vendor -composites=false ./gows ./storage/...",
+      "returncode": 0,
+      "limit": "two preexisting unkeyed-composite warnings in entity.go excluded as in QA158"
+    },
+    "packaging": {
+      "passed": 67,
+      "scope": "source archive contract and administrative bundle"
+    }
+  },
+  "reapplication_verified": true,
+  "dependencies_changed": false,
+  "waha_changed": false,
+  "schema_changed": false,
+  "provider_lock_changed": true,
+  "network_used_by_tests": false,
+  "live_accounts": false,
+  "candidate_backend_version": "0.8.10",
+  "candidate_provider_version": "0.8.6",
+  "runtime_qualification": {
+    "source_commit": "716140e0a7739341f786969faea631d91750396f",
+    "native_builds": {
+      "passed": true,
+      "sha256": "1ea114c479840bd3f237c7453672ec0f8c1dea4787ad3376dd42eb7a51364f81",
+      "bytes": 48390656,
+      "independent_paths_and_empty_caches": true,
+      "network": "none",
+      "source_commit": "716140e0a7739341f786969faea631d91750396f",
+      "compiler_image": "sha256:1a7ac3af3af212f23b6a5c90d68268bfb80824694c16a44dab57c1ca12a73bde"
+    },
+    "runtime": {
+      "archive_sha256": "63f4b47d21195ace1aa15ab150bb7034cb41dbcb61d4db89a0a7b7abb7c66848",
+      "archive_bytes": 818513920,
+      "manifest_digest": "sha256:7bfe008b7ee6f8e57ebb3088789f4abb3e302fc80ff616f9ed7032ee02abfd3d",
+      "config_digest": "sha256:f0a3c175db2a5d04b48a5dd1989899bb2a535950371f96b74e145683b770f26c",
+      "gows_sha256": "1ea114c479840bd3f237c7453672ec0f8c1dea4787ad3376dd42eb7a51364f81"
+    },
+    "gows_source": {
+      "role": "gows_source",
+      "name": "gows-corresponding-source-0.8.6.tar.gz",
+      "bytes": 8915916,
+      "sha256": "40e695467914efe261aac00298b17d4a78b63171401f46cac436465a6f732a2d",
+      "files": 2342,
+      "vendor_included": true,
+      "binary_sha256": "1ea114c479840bd3f237c7453672ec0f8c1dea4787ad3376dd42eb7a51364f81"
+    },
+    "instances": {
+      "personal": {
+        "passed": true,
+        "network": "none",
+        "production_sessions_mounted": false,
+        "production_container_unchanged": true,
+        "temporary_container_removed": true,
+        "authenticated_status": 200,
+        "anonymous_status": 401,
+        "audio_decoded": true,
+        "lifecycle_attempts": 0
+      },
+      "secondary": {
+        "passed": true,
+        "network": "none",
+        "production_sessions_mounted": false,
+        "production_container_unchanged": true,
+        "temporary_container_removed": true,
+        "authenticated_status": 200,
+        "anonymous_status": 401,
+        "audio_decoded": true,
+        "lifecycle_attempts": 0
+      }
+    },
+    "base_image": "sha256:dc1f6fbf129ba1d24e8d270b3c87aeda9a5f4b5f30d44b14565a9744022e9f1b",
+    "base_layers_preserved": 11,
+    "new_layers": 1,
+    "only_changed_file": "/app/gows",
+    "runtime_config_unchanged": true
+  }
+}

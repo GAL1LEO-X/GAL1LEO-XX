@@ -1,0 +1,867 @@
+diff --git a/src/gows/storage_event_handler.go b/src/gows/storage_event_handler.go
+index c68c8a1442e1b8575014a6363af63184bfcdd271..4818312542608a5983bf7e32648825ff27c6f214 100644
+--- a/src/gows/storage_event_handler.go
++++ b/src/gows/storage_event_handler.go
+@@ -1,6 +1,7 @@
+ package gows
+ 
+ import (
++	"context"
+ 	"errors"
+ 	"runtime/debug"
+ 
+@@ -292,6 +293,7 @@ func (st *StorageEventHandler) handleReceipt(event *events.Receipt) {
+ 		st.log.Debugf("Ignoring receipt for '%v(%v)'", event.Chat, event.MessageIDs)
+ 		return
+ 	}
++	var diagnosticContext context.Context
+ 	for _, id := range event.MessageIDs {
+ 		st.log.Debugf("Updating status for message %v(%v) to %v (receipt type: '%v')", event.Chat, id, status, event.Type.GoString())
+ 		msg, err := st.storage.Messages.GetMessageWithRetries(id)
+@@ -315,7 +317,12 @@ func (st *StorageEventHandler) handleReceipt(event *events.Receipt) {
+ 			continue
+ 		}
+ 		if msg.Info.Chat.ToNonAD() != event.Chat.ToNonAD() {
+-			st.log.Warnf("receipt.cache.skipped reason=chat_mismatch")
++			if diagnosticContext == nil {
++				ctx, cancel := context.WithTimeout(context.Background(), storage.ReceiptAliasBudget)
++				defer cancel()
++				diagnosticContext = ctx
++			}
++			st.logReceiptChatMismatch(diagnosticContext, msg, event)
+ 			continue
+ 		}
+ 		if !msg.Info.IsFromMe {
+diff --git a/src/gows/storage_receipt_alias.go b/src/gows/storage_receipt_alias.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..ec13d9517428298b387a6234acf2a6543a67a306
+--- /dev/null
++++ b/src/gows/storage_receipt_alias.go
+@@ -0,0 +1,48 @@
++package gows
++
++import (
++	"context"
++
++	"github.com/devlikeapro/gows/storage"
++	"go.mau.fi/whatsmeow/types"
++	"go.mau.fi/whatsmeow/types/events"
++)
++
++func receiptChatKind(jid types.JID) string {
++	if jid.User == "" {
++		return "empty"
++	}
++	switch jid.Server {
++	case types.DefaultUserServer:
++		return "pn"
++	case types.HiddenUserServer:
++		return "lid"
++	case types.GroupServer:
++		return "group"
++	case types.BroadcastServer:
++		return "broadcast"
++	case types.NewsletterServer:
++		return "newsletter"
++	default:
++		return "other"
++	}
++}
++
++func (st *StorageEventHandler) logReceiptChatMismatch(ctx context.Context, msg *storage.StoredMessage, event *events.Receipt) {
++	relation := storage.AliasNotApplicable
++	if pn, lid, compatible := storage.ReceiptAliasPair(msg.Info.Chat, event.Chat); compatible {
++		relation = storage.AliasUnavailable
++		if observer, ok := st.storage.Lidmap.(storage.ReceiptAliasObserver); ok {
++			relation = observer.ObserveReceiptAlias(ctx, pn, lid).Safe()
++		}
++	}
++	kind := "delivered"
++	switch event.Type {
++	case types.ReceiptTypeRead:
++		kind = "read"
++	case types.ReceiptTypePlayed:
++		kind = "played"
++	}
++	st.log.Warnf("receipt.cache.skipped reason=chat_mismatch cached_chat_kind=%s receipt_chat_kind=%s cached_from_me=%t receipt_from_me=%t receipt_kind=%s alias_relation=%s",
++		receiptChatKind(msg.Info.Chat), receiptChatKind(event.Chat), msg.Info.IsFromMe, event.IsFromMe, kind, relation)
++}
+diff --git a/src/gows/storage_receipt_alias_test.go b/src/gows/storage_receipt_alias_test.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..3960802b54b6af7847f61a56e1916d343bd5e2b4
+--- /dev/null
++++ b/src/gows/storage_receipt_alias_test.go
+@@ -0,0 +1,147 @@
++package gows
++
++import (
++	"context"
++	"database/sql"
++	"fmt"
++	"path/filepath"
++	"strings"
++	"testing"
++	"time"
++
++	"github.com/devlikeapro/gows/storage"
++	"github.com/devlikeapro/gows/storage/sqlstorage"
++	_ "github.com/mattn/go-sqlite3"
++	"go.mau.fi/whatsmeow"
++	"go.mau.fi/whatsmeow/types"
++	"go.mau.fi/whatsmeow/types/events"
++	waLog "go.mau.fi/whatsmeow/util/log"
++)
++
++type receiptAliasSpy struct {
++	storage.LidmapStorage
++	relation        storage.ReceiptAliasRelation
++	calls           int
++	wait            bool
++	deadlineMissing bool
++}
++
++func TestReceiptAliasRealInstanceStoreWiring(t *testing.T) {
++	pn, lid := types.NewJID("15550001111", types.DefaultUserServer), types.NewJID("123456", types.HiddenUserServer)
++	for _, tc := range []struct {
++		name, pn string
++		want     storage.ReceiptAliasRelation
++	}{
++		{"one", pn.User, storage.AliasPair}, {"two", "15550002222", storage.AliasElsewhere},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			path := filepath.Join(t.TempDir(), "instance.db")
++			container, err := sqlstorage.New("sqlite3", path+"?_foreign_keys=on", waLog.Noop)
++			if err != nil {
++				t.Fatal(err)
++			}
++			defer container.Close()
++			writer, err := sql.Open("sqlite3", path)
++			if err != nil {
++				t.Fatal(err)
++			}
++			_, err = writer.Exec("INSERT INTO whatsmeow_lid_map(lid,pn) VALUES(?,?)", lid.User, tc.pn)
++			writer.Close()
++			if err != nil {
++				t.Fatal(err)
++			}
++			instance := BuildStorage(container, &GoWS{Client: &whatsmeow.Client{Log: waLog.Noop}}, StorageConfig{})
++			msg := receiptStored(pn, true, nil)
++			h, messages, log := receiptHandler(map[types.MessageID]*storage.StoredMessage{"same-message-key": msg})
++			instance.Messages = messages
++			h.storage = instance
++			h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: lid}, MessageIDs: []types.MessageID{"same-message-key"}, Type: types.ReceiptTypeRead})
++			if messages.writes != 0 || msg.Status != nil || len(log.diagnostic()) != 1 || !strings.HasSuffix(log.diagnostic()[0].text, "alias_relation="+string(tc.want)) {
++				t.Fatal("instance wiring or receipt guard changed")
++			}
++		})
++	}
++}
++
++func (s *receiptAliasSpy) ObserveReceiptAlias(ctx context.Context, pn, lid types.JID) storage.ReceiptAliasRelation {
++	s.calls++
++	if _, ok := ctx.Deadline(); !ok {
++		s.deadlineMissing = true
++	}
++	if s.wait {
++		<-ctx.Done()
++		return storage.AliasReadError
++	}
++	return s.relation
++}
++
++func TestReceiptAliasDiagnosticNeverAcceptsMismatch(t *testing.T) {
++	pn, lid := types.NewJID("15550001111", types.DefaultUserServer), types.NewJID("123456", types.HiddenUserServer)
++	for _, relation := range []storage.ReceiptAliasRelation{storage.AliasUnavailable, storage.AliasMissing, storage.AliasPair, storage.AliasElsewhere, storage.AliasConflict, storage.AliasReadError, "PRIVATE-RAW-ERROR"} {
++		for _, own := range []bool{false, true} {
++			for _, receiptOwn := range []bool{false, true} {
++				for _, step := range []struct {
++					kind types.ReceiptType
++					name string
++				}{{types.ReceiptTypeDelivered, "delivered"}, {types.ReceiptTypeRead, "read"}, {types.ReceiptTypePlayed, "played"}} {
++					t.Run(fmt.Sprintf("%s/%t/%t/%s", relation, own, receiptOwn, step.name), func(t *testing.T) {
++						msg := receiptStored(pn, own, nil)
++						h, s, log := receiptHandler(map[types.MessageID]*storage.StoredMessage{"PRIVATE-MESSAGE-ID": msg})
++						observer := &receiptAliasSpy{relation: relation}
++						h.storage.Lidmap = observer
++						h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: lid, IsFromMe: receiptOwn}, MessageIDs: []types.MessageID{"PRIVATE-MESSAGE-ID"}, Type: step.kind})
++						want := fmt.Sprintf("receipt.cache.skipped reason=chat_mismatch cached_chat_kind=pn receipt_chat_kind=lid cached_from_me=%t receipt_from_me=%t receipt_kind=%s alias_relation=%s", own, receiptOwn, step.name, relation.Safe())
++						d := log.diagnostic()
++						if s.writes != 0 || msg.Status != nil || observer.calls != 1 || observer.deadlineMissing || len(d) != 1 || d[0].level != "warn" || d[0].text != want {
++							t.Fatal("receipt guard/finite diagnostic changed")
++						}
++						for _, secret := range []string{pn.User, lid.User, "PRIVATE-MESSAGE-ID", "PRIVATE-RAW-ERROR", "@"} {
++							if strings.Contains(d[0].text, secret) {
++								t.Fatal("private data in new diagnostic")
++							}
++						}
++					})
++				}
++			}
++		}
++	}
++}
++
++func TestReceiptAliasIneligibleCasesNeverLookup(t *testing.T) {
++	pn, lid := types.NewJID("15550001111", types.DefaultUserServer), types.NewJID("123456", types.HiddenUserServer)
++	integrator := pn
++	integrator.Integrator = 2
++	for _, chat := range []types.JID{types.JID{}, types.NewJID("123", types.GroupServer), types.NewJID("123", types.BroadcastServer), types.NewJID("123", types.NewsletterServer), types.NewJID(pn.User, types.LegacyUserServer), types.PSAJID, integrator} {
++		h, s, _ := receiptHandler(map[types.MessageID]*storage.StoredMessage{"id": receiptStored(chat, true, nil)})
++		observer := &receiptAliasSpy{relation: storage.AliasPair}
++		h.storage.Lidmap = observer
++		h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: lid}, MessageIDs: []types.MessageID{"id"}, Type: types.ReceiptTypeRead})
++		if observer.calls != 0 || s.writes != 0 {
++			t.Fatal("ineligible chat queried or accepted")
++		}
++	}
++	h, s, log := receiptHandler(map[types.MessageID]*storage.StoredMessage{"id": receiptStored(pn, true, nil)})
++	h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: lid}, MessageIDs: []types.MessageID{"id"}, Type: types.ReceiptTypeRead})
++	if s.writes != 0 || !strings.HasSuffix(log.diagnostic()[0].text, "alias_relation=mapping_unavailable") {
++		t.Fatal("absent adapter")
++	}
++}
++
++func TestReceiptAliasOneBudgetPerBatchAndValidNextItem(t *testing.T) {
++	pn, lid := types.NewJID("15550001111", types.DefaultUserServer), types.NewJID("123456", types.HiddenUserServer)
++	h, s, log := receiptHandler(map[types.MessageID]*storage.StoredMessage{
++		"first": receiptStored(pn, true, nil), "second": receiptStored(pn, false, nil), "valid": receiptStored(lid, true, nil)})
++	observer := &receiptAliasSpy{wait: true}
++	h.storage.Lidmap = observer
++	start := time.Now()
++	h.handleReceipt(&events.Receipt{MessageSource: types.MessageSource{Chat: lid}, MessageIDs: []types.MessageID{"first", "second", "valid"}, Type: types.ReceiptTypeRead})
++	if elapsed := time.Since(start); elapsed > 500*time.Millisecond {
++		t.Fatal("diagnostic batch wait not bounded")
++	}
++	if observer.calls != 2 || observer.deadlineMissing || s.writes != 1 || len(log.diagnostic()) != 2 {
++		t.Fatal("batch behavior changed")
++	}
++	if s.messages["first"].Status != nil || s.messages["second"].Status != nil || *s.messages["valid"].Status != storage.StatusRead {
++		t.Fatal("wrong cached status")
++	}
++}
+diff --git a/src/gows/storage_receipt_diagnostics_test.go b/src/gows/storage_receipt_diagnostics_test.go
+index 66cc85b6bd08affed89e17a26990547441747f3b..b53fcc5b42689fe1c9c26e6e9d7c8e6b9c46ee8c 100644
+--- a/src/gows/storage_receipt_diagnostics_test.go
++++ b/src/gows/storage_receipt_diagnostics_test.go
+@@ -92,7 +92,11 @@ func TestReceiptDiagnosticClassification(t *testing.T) {
+ 				}
+ 				return
+ 			}
+-			if len(records) != 1 || records[0].level != tc.level || records[0].text != "receipt.cache.skipped reason="+tc.reason {
++			wantText := "receipt.cache.skipped reason=" + tc.reason
++			if tc.reason == "chat_mismatch" {
++				wantText += fmt.Sprintf(" cached_chat_kind=pn receipt_chat_kind=pn cached_from_me=%t receipt_from_me=false receipt_kind=read alias_relation=not_applicable", tc.msg.Info.IsFromMe)
++			}
++			if len(records) != 1 || records[0].level != tc.level || records[0].text != wantText {
+ 				t.Fatalf("diagnostic=%v want %s/%s", records, tc.level, tc.reason)
+ 			}
+ 			if strings.Contains(records[0].text, string(id)) || strings.Contains(records[0].text, chat.String()) {
+diff --git a/src/storage/receipt_alias.go b/src/storage/receipt_alias.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..8c7e5e1a72bd6e43669fd461002510083ea96027
+--- /dev/null
++++ b/src/storage/receipt_alias.go
+@@ -0,0 +1,94 @@
++package storage
++
++import (
++	"context"
++	"time"
++
++	"go.mau.fi/whatsmeow/types"
++)
++
++// ReceiptAliasBudget bounds added diagnostic waiting, not WhatsApp transport.
++const ReceiptAliasBudget = 50 * time.Millisecond
++
++type ReceiptAliasRelation string
++
++const (
++	AliasNotApplicable ReceiptAliasRelation = "not_applicable"
++	AliasUnavailable   ReceiptAliasRelation = "mapping_unavailable"
++	AliasMissing       ReceiptAliasRelation = "mapping_missing"
++	AliasPair          ReceiptAliasRelation = "pair_in_local_snapshot"
++	AliasElsewhere     ReceiptAliasRelation = "mapped_elsewhere"
++	AliasConflict      ReceiptAliasRelation = "mapping_conflict"
++	AliasReadError     ReceiptAliasRelation = "mapping_read_error"
++)
++
++// ReceiptAliasObserver is optional. It must not resolve identities over the
++// network, update LID caches, retry reads, or return private data to the logger.
++type ReceiptAliasObserver interface {
++	ObserveReceiptAlias(context.Context, types.JID, types.JID) ReceiptAliasRelation
++}
++
++func (r ReceiptAliasRelation) Safe() ReceiptAliasRelation {
++	switch r {
++	case AliasNotApplicable, AliasUnavailable, AliasMissing, AliasPair, AliasElsewhere, AliasConflict, AliasReadError:
++		return r
++	default:
++		return AliasReadError
++	}
++}
++
++func receiptAliasUser(user string) bool {
++	if len(user) == 0 || len(user) > 25 || user[0] == '0' {
++		return false
++	}
++	for _, c := range user {
++		if c < '0' || c > '9' {
++			return false
++		}
++	}
++	return true
++}
++
++// ReceiptAliasPair accepts only native personal PN/LID pairs. ToNonAD removes
++// agent/device suffixes, but is never itself evidence of PN/LID equivalence.
++func ReceiptAliasPair(a, b types.JID) (pn, lid types.JID, ok bool) {
++	a, b = a.ToNonAD(), b.ToNonAD()
++	if a.Integrator != 0 || b.Integrator != 0 || !receiptAliasUser(a.User) || !receiptAliasUser(b.User) || a.IsBot() || b.IsBot() {
++		return pn, lid, false
++	}
++	if a.Server == types.DefaultUserServer && b.Server == types.HiddenUserServer {
++		return a, b, true
++	}
++	if b.Server == types.DefaultUserServer && a.Server == types.HiddenUserServer {
++		return b, a, true
++	}
++	return pn, lid, false
++}
++
++// ClassifyReceiptAliasSnapshot uses one bounded snapshot. A pair in this map
++// does not authorize receipt acceptance or prove an identity outside the map.
++func ClassifyReceiptAliasSnapshot(pn, lid types.JID, rows []LidmapEntry) ReceiptAliasRelation {
++	if len(rows) >= 3 {
++		return AliasConflict
++	}
++	if len(rows) == 0 {
++		return AliasMissing
++	}
++	seenPN, seenLID := make(map[types.JID]bool), make(map[types.JID]bool)
++	exact := false
++	for _, row := range rows {
++		p, l, valid := ReceiptAliasPair(row.Pn, row.Lid)
++		if !valid || p != row.Pn || l != row.Lid || seenPN[p] || seenLID[l] {
++			return AliasConflict
++		}
++		if p != pn && l != lid {
++			return AliasReadError // Unexpected query result; no identity conclusion.
++		}
++		seenPN[p], seenLID[l] = true, true
++		exact = exact || p == pn && l == lid
++	}
++	if exact {
++		return AliasPair
++	}
++	return AliasElsewhere
++}
+diff --git a/src/storage/receipt_alias_test.go b/src/storage/receipt_alias_test.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..2cc74a2dd770758dc89af548eecc8573d7835f5d
+--- /dev/null
++++ b/src/storage/receipt_alias_test.go
+@@ -0,0 +1,70 @@
++package storage
++
++import (
++	"testing"
++
++	"go.mau.fi/whatsmeow/types"
++)
++
++func TestReceiptAliasPairCompatibility(t *testing.T) {
++	pn, lid := types.NewJID("15550001111", types.DefaultUserServer), types.NewJID("123456", types.HiddenUserServer)
++	ad := pn
++	ad.Device, ad.RawAgent = 7, 1
++	integrator := pn
++	integrator.Integrator = 1
++	for _, tc := range []struct {
++		name  string
++		a, b  types.JID
++		valid bool
++	}{
++		{"pn-lid", pn, lid, true}, {"lid-pn", lid, pn, true}, {"device", ad, lid, true},
++		{"pn-pn", pn, pn, false}, {"lid-lid", lid, lid, false}, {"empty", types.JID{}, lid, false},
++		{"empty-user", types.NewJID("", types.DefaultUserServer), lid, false},
++		{"legacy", types.NewJID(pn.User, types.LegacyUserServer), lid, false},
++		{"psa", types.PSAJID, lid, false}, {"legacy-psa", types.LegacyPSAJID, lid, false},
++		{"integrator", integrator, lid, false}, {"group", types.NewJID("1234", types.GroupServer), lid, false},
++		{"broadcast", types.StatusBroadcastJID, lid, false}, {"newsletter", types.NewJID("1234", types.NewsletterServer), lid, false},
++		{"malformed", types.NewJID("1234' OR 1=1", types.DefaultUserServer), lid, false},
++		{"long", types.NewJID("123456789012345678901234567", types.DefaultUserServer), lid, false},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			p, l, ok := ReceiptAliasPair(tc.a, tc.b)
++			if ok != tc.valid || ok && (p != pn || l != lid) {
++				t.Fatal("unexpected compatibility")
++			}
++		})
++	}
++}
++
++func TestReceiptAliasSnapshotClassifiesFiniteEvidence(t *testing.T) {
++	pn, lid := types.NewJID("15550001111", types.DefaultUserServer), types.NewJID("123456", types.HiddenUserServer)
++	row := func(l, p string) LidmapEntry {
++		return LidmapEntry{Lid: types.NewJID(l, types.HiddenUserServer), Pn: types.NewJID(p, types.DefaultUserServer)}
++	}
++	exact := row(lid.User, pn.User)
++	for _, tc := range []struct {
++		name string
++		rows []LidmapEntry
++		want ReceiptAliasRelation
++	}{
++		{"missing", nil, AliasMissing}, {"pair", []LidmapEntry{exact}, AliasPair},
++		{"lid-elsewhere", []LidmapEntry{row(lid.User, "15550002222")}, AliasElsewhere},
++		{"pn-elsewhere", []LidmapEntry{row("654321", pn.User)}, AliasElsewhere},
++		{"both-elsewhere", []LidmapEntry{row(lid.User, "15550002222"), row("654321", pn.User)}, AliasElsewhere},
++		{"lid-conflict", []LidmapEntry{exact, row(lid.User, "15550002222")}, AliasConflict},
++		{"pn-conflict", []LidmapEntry{exact, row("654321", pn.User)}, AliasConflict},
++		{"duplicate", []LidmapEntry{exact, exact}, AliasConflict},
++		{"limit", []LidmapEntry{exact, exact, exact}, AliasConflict},
++		{"irrelevant", []LidmapEntry{row("654321", "15550002222")}, AliasReadError},
++		{"malformed-row", []LidmapEntry{row(lid.User, "bad-private-data")}, AliasConflict},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			if got := ClassifyReceiptAliasSnapshot(pn, lid, tc.rows); got != tc.want {
++				t.Fatalf("got %s want %s", got, tc.want)
++			}
++		})
++	}
++	if ReceiptAliasRelation("private-error").Safe() != AliasReadError {
++		t.Fatal("unbounded diagnostic value")
++	}
++}
+diff --git a/src/storage/sqlstorage/lidmap.go b/src/storage/sqlstorage/lidmap.go
+index aa4ce04f3b85335a35ef3fe5cc0c75435e1d0455..b55ea282a0f05c28abbeed9e59f438addd97168c 100644
+--- a/src/storage/sqlstorage/lidmap.go
++++ b/src/storage/sqlstorage/lidmap.go
+@@ -12,12 +12,14 @@ var _ storage.LidmapStorage = (*SqlLidmapStorage)(nil)
+ 
+ func (gc *GContainer) NewLidmapStorage() *SqlLidmapStorage {
+ 	return &SqlLidmapStorage{
+-		db: gc.db,
++		db:                    gc.db,
++		receiptDiagnosticGate: make(chan struct{}, 1),
+ 	}
+ }
+ 
+ type SqlLidmapStorage struct {
+-	db *sqlx.DB
++	db                    *sqlx.DB
++	receiptDiagnosticGate chan struct{}
+ }
+ 
+ // GetAllLidMap returns all lid/pn pairs from the database as an array of LidmapEntry
+diff --git a/src/storage/sqlstorage/receipt_alias.go b/src/storage/sqlstorage/receipt_alias.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..1c772310a7b16714c692b313ba424e8028020171
+--- /dev/null
++++ b/src/storage/sqlstorage/receipt_alias.go
+@@ -0,0 +1,83 @@
++package sqlstorage
++
++import (
++	"context"
++
++	"github.com/devlikeapro/gows/storage"
++	"go.mau.fi/whatsmeow/types"
++)
++
++const receiptAliasQuery = `SELECT lid, pn FROM whatsmeow_lid_map WHERE lid = $1 OR pn = $2 LIMIT 3`
++
++var _ storage.ReceiptAliasObserver = (*SqlLidmapStorage)(nil)
++
++// ObserveReceiptAlias reads the same instance's local SQLite database once.
++// Remote SQL stores are deliberately unavailable: this diagnostic must never
++// introduce network lookups. It does not use CachedLIDMap or mutate its cache.
++func (s *SqlLidmapStorage) ObserveReceiptAlias(ctx context.Context, pn, lid types.JID) storage.ReceiptAliasRelation {
++	p, l, valid := storage.ReceiptAliasPair(pn, lid)
++	if !valid || p != pn || l != lid {
++		return storage.AliasNotApplicable
++	}
++	if s == nil || s.db == nil || s.receiptDiagnosticGate == nil {
++		return storage.AliasUnavailable
++	}
++	if driver := s.db.DriverName(); driver != "sqlite3" && driver != "sqlite" {
++		return storage.AliasUnavailable
++	}
++	ctx, cancel := context.WithTimeout(ctx, storage.ReceiptAliasBudget)
++	defer cancel()
++	if ctx.Err() != nil {
++		return storage.AliasReadError
++	}
++	select {
++	case s.receiptDiagnosticGate <- struct{}{}:
++	default:
++		return storage.AliasReadError // Never queue diagnostic work or retry it.
++	}
++	result := make(chan storage.ReceiptAliasRelation, 1)
++	go func() {
++		relation := func() storage.ReceiptAliasRelation {
++			defer func() { <-s.receiptDiagnosticGate }()
++			return s.receiptAliasSnapshot(ctx, pn, lid)
++		}()
++		result <- relation
++	}()
++	// Some SQLite driver lock waits can outlive context cancellation. Bound
++	// caller waiting independently; retain the per-instance gate until the one
++	// read actually exits. No unbounded goroutine accumulation is possible.
++	select {
++	case <-ctx.Done():
++		return storage.AliasReadError
++	case relation := <-result:
++		if ctx.Err() != nil {
++			return storage.AliasReadError
++		}
++		return relation
++	}
++}
++
++func (s *SqlLidmapStorage) receiptAliasSnapshot(ctx context.Context, pn, lid types.JID) storage.ReceiptAliasRelation {
++	rows, err := s.db.QueryContext(ctx, receiptAliasQuery, lid.User, pn.User)
++	if err != nil {
++		return storage.AliasReadError
++	}
++	defer rows.Close()
++	entries := make([]storage.LidmapEntry, 0, 3)
++	for rows.Next() {
++		var l, p string
++		if err := rows.Scan(&l, &p); err != nil {
++			return storage.AliasReadError
++		}
++		entries = append(entries, storage.LidmapEntry{
++			Lid: types.NewJID(l, types.HiddenUserServer), Pn: types.NewJID(p, types.DefaultUserServer),
++		})
++		if len(entries) == 3 {
++			return storage.AliasConflict
++		}
++	}
++	if rows.Err() != nil || ctx.Err() != nil {
++		return storage.AliasReadError
++	}
++	return storage.ClassifyReceiptAliasSnapshot(pn, lid, entries)
++}
+diff --git a/src/storage/sqlstorage/receipt_alias_test.go b/src/storage/sqlstorage/receipt_alias_test.go
+new file mode 100644
+index 0000000000000000000000000000000000000000..36f0a8871874f2cb63aeb2370f7a5b0135ed9b1e
+--- /dev/null
++++ b/src/storage/sqlstorage/receipt_alias_test.go
+@@ -0,0 +1,317 @@
++package sqlstorage
++
++import (
++	"context"
++	"database/sql"
++	"database/sql/driver"
++	"errors"
++	"fmt"
++	"io"
++	"path/filepath"
++	"sync"
++	"sync/atomic"
++	"testing"
++	"time"
++
++	"github.com/devlikeapro/gows/storage"
++	"github.com/jmoiron/sqlx"
++	_ "github.com/mattn/go-sqlite3"
++	"go.mau.fi/whatsmeow/types"
++)
++
++var aliasPN = types.NewJID("15550001111", types.DefaultUserServer)
++var aliasLID = types.NewJID("123456", types.HiddenUserServer)
++
++func aliasSQLite(t *testing.T, pairs [][2]string) (*SqlLidmapStorage, *sqlx.DB, string) {
++	t.Helper()
++	path := filepath.Join(t.TempDir(), "alias.db")
++	db, err := sqlx.Open("sqlite3", path+"?_busy_timeout=1000")
++	if err != nil {
++		t.Fatal(err)
++	}
++	db.SetMaxOpenConns(1)
++	t.Cleanup(func() { db.Close() })
++	for _, query := range []string{"PRAGMA journal_mode=WAL", "CREATE TABLE whatsmeow_lid_map(lid TEXT, pn TEXT)"} {
++		if _, err = db.Exec(query); err != nil {
++			t.Fatal(err)
++		}
++	}
++	for _, pair := range pairs {
++		if _, err = db.Exec("INSERT INTO whatsmeow_lid_map VALUES(?,?)", pair[0], pair[1]); err != nil {
++			t.Fatal(err)
++		}
++	}
++	if _, err = db.Exec("PRAGMA query_only=ON"); err != nil {
++		t.Fatal(err)
++	}
++	return (&GContainer{db: db, dialect: "sqlite3"}).NewLidmapStorage(), db, path
++}
++
++func TestReceiptAliasSQLiteSnapshotAndReadOnly(t *testing.T) {
++	for _, tc := range []struct {
++		name  string
++		pairs [][2]string
++		want  storage.ReceiptAliasRelation
++	}{
++		{"missing", nil, storage.AliasMissing},
++		{"pair", [][2]string{{aliasLID.User, aliasPN.User}}, storage.AliasPair},
++		{"lid-other", [][2]string{{aliasLID.User, "15550002222"}}, storage.AliasElsewhere},
++		{"pn-other", [][2]string{{"654321", aliasPN.User}}, storage.AliasElsewhere},
++		{"two-other", [][2]string{{aliasLID.User, "15550002222"}, {"654321", aliasPN.User}}, storage.AliasElsewhere},
++		{"conflict", [][2]string{{aliasLID.User, aliasPN.User}, {aliasLID.User, "15550002222"}}, storage.AliasConflict},
++		{"duplicate", [][2]string{{aliasLID.User, aliasPN.User}, {aliasLID.User, aliasPN.User}}, storage.AliasConflict},
++		{"limit", [][2]string{{aliasLID.User, "15550002222"}, {aliasLID.User, "15550003333"}, {aliasLID.User, "15550004444"}, {aliasLID.User, "15550005555"}}, storage.AliasConflict},
++		{"unrelated-ignored", [][2]string{{"654321", "15550002222"}}, storage.AliasMissing},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			s, db, _ := aliasSQLite(t, tc.pairs)
++			var before, after int
++			if err := db.Get(&before, "SELECT total_changes()"); err != nil {
++				t.Fatal(err)
++			}
++			if got := s.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID); got != tc.want {
++				t.Fatalf("got %s want %s", got, tc.want)
++			}
++			if err := db.Get(&after, "SELECT total_changes()"); err != nil {
++				t.Fatal(err)
++			}
++			if before != after {
++				t.Fatal("diagnostic wrote to database")
++			}
++			if _, err := db.Exec("DELETE FROM whatsmeow_lid_map"); err == nil {
++				t.Fatal("fixture not actually read-only")
++			}
++		})
++	}
++}
++
++func TestReceiptAliasSQLiteInstancesAndConcurrentSnapshots(t *testing.T) {
++	one, _, path := aliasSQLite(t, [][2]string{{aliasLID.User, aliasPN.User}})
++	two, _, _ := aliasSQLite(t, [][2]string{{aliasLID.User, "15550002222"}})
++	if one.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID) != storage.AliasPair || two.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID) != storage.AliasElsewhere {
++		t.Fatal("cross-instance mapping")
++	}
++	writer, err := sqlx.Open("sqlite3", path+"?_busy_timeout=1000")
++	if err != nil {
++		t.Fatal(err)
++	}
++	defer writer.Close()
++	writer.SetMaxOpenConns(1)
++	var wg sync.WaitGroup
++	errorsFound := make(chan string, 128)
++	wg.Add(1)
++	go func() {
++		defer wg.Done()
++		for n := 0; n < 30; n++ {
++			tx, err := writer.Begin()
++			if err != nil {
++				errorsFound <- "begin"
++				return
++			}
++			if _, err = tx.Exec("DELETE FROM whatsmeow_lid_map"); err == nil {
++				if n%2 == 0 {
++					_, err = tx.Exec("INSERT INTO whatsmeow_lid_map VALUES(?,?),(?,?)", aliasLID.User, "15550002222", "654321", aliasPN.User)
++				} else {
++					_, err = tx.Exec("INSERT INTO whatsmeow_lid_map VALUES(?,?)", aliasLID.User, aliasPN.User)
++				}
++			}
++			if err != nil {
++				tx.Rollback()
++				errorsFound <- "write"
++				return
++			}
++			if err = tx.Commit(); err != nil {
++				errorsFound <- "commit"
++				return
++			}
++		}
++	}()
++	for i := 0; i < 4; i++ {
++		wg.Add(1)
++		go func() {
++			defer wg.Done()
++			for n := 0; n < 30; n++ {
++				got := one.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID)
++				if got != storage.AliasPair && got != storage.AliasElsewhere && got != storage.AliasReadError {
++					errorsFound <- "inconsistent snapshot"
++					return
++				}
++				got = two.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID)
++				if got != storage.AliasElsewhere && got != storage.AliasReadError {
++					errorsFound <- "cross-instance read"
++					return
++				}
++			}
++		}()
++	}
++	wg.Wait()
++	close(errorsFound)
++	for message := range errorsFound {
++		t.Error(message)
++	}
++	if two.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID) != storage.AliasElsewhere {
++		t.Fatal("mapping changed in other instance")
++	}
++}
++
++type aliasDriver struct{ script *aliasScript }
++type aliasConn struct{ script *aliasScript }
++type aliasRows struct {
++	values   [][]driver.Value
++	index    int
++	rowError bool
++}
++type aliasScript struct {
++	mu              sync.Mutex
++	calls           int
++	query           string
++	args            []driver.NamedValue
++	values          [][]driver.Value
++	err             error
++	rowError        bool
++	block           <-chan struct{}
++	started         chan struct{}
++	done            chan struct{}
++	missingDeadline bool
++}
++
++var aliasDriverID atomic.Int64
++
++func (d aliasDriver) Open(string) (driver.Conn, error) { return &aliasConn{d.script}, nil }
++func (c *aliasConn) Prepare(string) (driver.Stmt, error) {
++	return nil, errors.New("unexpected prepare")
++}
++func (c *aliasConn) Close() error              { return nil }
++func (c *aliasConn) Begin() (driver.Tx, error) { return nil, errors.New("unexpected transaction") }
++func (c *aliasConn) QueryContext(ctx context.Context, q string, a []driver.NamedValue) (driver.Rows, error) {
++	s := c.script
++	s.mu.Lock()
++	s.calls++
++	s.query = q
++	s.args = append([]driver.NamedValue(nil), a...)
++	if deadline, ok := ctx.Deadline(); !ok || time.Until(deadline) > storage.ReceiptAliasBudget {
++		s.missingDeadline = true
++	}
++	s.mu.Unlock()
++	if s.started != nil {
++		close(s.started)
++	}
++	if s.block != nil {
++		<-s.block
++	} // Deliberately ignore cancellation to test caller bound.
++	if s.done != nil {
++		defer close(s.done)
++	}
++	if s.err != nil {
++		return nil, s.err
++	}
++	return &aliasRows{values: s.values, rowError: s.rowError}, nil
++}
++func (r *aliasRows) Columns() []string { return []string{"lid", "pn"} }
++func (r *aliasRows) Close() error      { return nil }
++func (r *aliasRows) Next(v []driver.Value) error {
++	if r.index >= len(r.values) {
++		if r.rowError {
++			return errors.New("PRIVATE-ROW-ERROR")
++		}
++		return io.EOF
++	}
++	copy(v, r.values[r.index])
++	r.index++
++	return nil
++}
++func aliasFake(t *testing.T, s *aliasScript) *SqlLidmapStorage {
++	t.Helper()
++	name := fmt.Sprintf("receipt-alias-%d", aliasDriverID.Add(1))
++	sql.Register(name, aliasDriver{s})
++	db, err := sql.Open(name, "")
++	if err != nil {
++		t.Fatal(err)
++	}
++	t.Cleanup(func() { db.Close() })
++	return &SqlLidmapStorage{db: sqlx.NewDb(db, "sqlite3"), receiptDiagnosticGate: make(chan struct{}, 1)}
++}
++
++func TestReceiptAliasQueryParametersErrorsAndLimits(t *testing.T) {
++	for _, tc := range []struct {
++		name   string
++		script *aliasScript
++		want   storage.ReceiptAliasRelation
++	}{
++		{"pair", &aliasScript{values: [][]driver.Value{{aliasLID.User, aliasPN.User}}}, storage.AliasPair},
++		{"sql-error", &aliasScript{err: errors.New("PRIVATE-SQL-ERROR")}, storage.AliasReadError},
++		{"scan-error", &aliasScript{values: [][]driver.Value{{nil, aliasPN.User}}}, storage.AliasReadError},
++		{"iteration-error", &aliasScript{values: [][]driver.Value{{aliasLID.User, aliasPN.User}}, rowError: true}, storage.AliasReadError},
++		{"bounded-rows", &aliasScript{values: [][]driver.Value{{aliasLID.User, aliasPN.User}, {aliasLID.User, aliasPN.User}, {aliasLID.User, aliasPN.User}, {nil, nil}}}, storage.AliasConflict},
++	} {
++		t.Run(tc.name, func(t *testing.T) {
++			script := tc.script
++			s := aliasFake(t, script)
++			if got := s.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID); got != tc.want {
++				t.Fatalf("got %s", got)
++			}
++			script.mu.Lock()
++			defer script.mu.Unlock()
++			if script.calls != 1 || script.query != receiptAliasQuery || len(script.args) != 2 || script.args[0].Value != aliasLID.User || script.args[1].Value != aliasPN.User || script.missingDeadline {
++				t.Fatal("query contract/retry/deadline changed")
++			}
++		})
++	}
++}
++
++func TestReceiptAliasTimeoutKeepsOneInflightAndNeverRetries(t *testing.T) {
++	release := make(chan struct{})
++	script := &aliasScript{block: release, started: make(chan struct{}), done: make(chan struct{}), values: [][]driver.Value{{aliasLID.User, aliasPN.User}}}
++	s := aliasFake(t, script)
++	defer func() {
++		close(release)
++		select {
++		case <-script.done:
++		case <-time.After(time.Second):
++			t.Error("driver did not finish after release")
++		}
++	}()
++	start := time.Now()
++	if got := s.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID); got != storage.AliasReadError {
++		t.Fatal("late query accepted")
++	}
++	if time.Since(start) > 500*time.Millisecond {
++		t.Fatal("unbounded driver wait")
++	}
++	for n := 0; n < 20; n++ {
++		if s.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID) != storage.AliasReadError {
++			t.Fatal("inflight work bypassed")
++		}
++	}
++	script.mu.Lock()
++	defer script.mu.Unlock()
++	if script.calls != 1 {
++		t.Fatal("new queries accumulated while old read blocked")
++	}
++}
++
++func TestReceiptAliasUnsupportedAdapterOrExpiredContextNeverQueries(t *testing.T) {
++	script := &aliasScript{}
++	s := aliasFake(t, script)
++	ctx, cancel := context.WithCancel(context.Background())
++	cancel()
++	if s.ObserveReceiptAlias(ctx, aliasPN, aliasLID) != storage.AliasReadError {
++		t.Fatal("expired context")
++	}
++	if s.ObserveReceiptAlias(context.Background(), types.PSAJID, aliasLID) != storage.AliasNotApplicable {
++		t.Fatal("special target")
++	}
++	s.db = sqlx.NewDb(s.db.DB, "postgres")
++	if s.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID) != storage.AliasUnavailable {
++		t.Fatal("remote SQL must not introduce network calls")
++	}
++	var missing *SqlLidmapStorage
++	if missing.ObserveReceiptAlias(context.Background(), aliasPN, aliasLID) != storage.AliasUnavailable {
++		t.Fatal("nil adapter")
++	}
++	script.mu.Lock()
++	defer script.mu.Unlock()
++	if script.calls != 0 {
++		t.Fatal("unexpected database query")
++	}
++}

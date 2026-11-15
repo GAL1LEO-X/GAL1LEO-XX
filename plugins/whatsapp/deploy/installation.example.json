@@ -1,0 +1,32 @@
+{
+  "format": "whatsapp-installation-v1",
+  "paths": {
+    "project": "/srv/messages/app",
+    "configuration": "/etc/messages",
+    "state": "/var/lib/messages-data",
+    "gateway": "/var/lib/messages-gateways",
+    "backup": "/var/backups/messages",
+    "administration_code": "/usr/local/lib/messages-admin",
+    "administration_state": "/var/lib/messages-admin"
+  },
+  "services": {
+    "prefix": "messages",
+    "recovery": "messages-recovery"
+  },
+  "accounts": {
+    "personal": "messages-owner",
+    "team": "messages-team"
+  },
+  "ports": {
+    "personal": {
+      "bridge": 19001,
+      "gateway": 19009
+    },
+    "team": {
+      "bridge": 21005,
+      "gateway": 21013
+    }
+  },
+  "authentication": "external-oidc",
+  "frontend": "existing"
+}

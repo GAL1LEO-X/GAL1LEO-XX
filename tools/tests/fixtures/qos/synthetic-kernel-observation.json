@@ -1,0 +1,1054 @@
+{
+  "io": "8:0 enable=1 ctrl=auto rpct=0.00 rlat=5000 wpct=0.00 wlat=5000 min=1.00 max=10000.00",
+  "nft": {
+    "box_priority": {
+      "nftables": [
+        {
+          "chain": {
+            "family": "inet",
+            "table": "box_priority",
+            "name": "output",
+            "type": "route",
+            "hook": "output",
+            "prio": -140,
+            "policy": "accept"
+          }
+        },
+        {
+          "counter": {
+            "family": "inet",
+            "table": "box_priority",
+            "name": "essential"
+          }
+        },
+        {
+          "counter": {
+            "family": "inet",
+            "table": "box_priority",
+            "name": "https_ipv4"
+          }
+        },
+        {
+          "counter": {
+            "family": "inet",
+            "table": "box_priority",
+            "name": "https_ipv6"
+          }
+        },
+        {
+          "counter": {
+            "family": "inet",
+            "table": "box_priority",
+            "name": "proxy_ipv4"
+          }
+        },
+        {
+          "counter": {
+            "family": "inet",
+            "table": "box_priority",
+            "name": "proxy_ipv6"
+          }
+        },
+        {
+          "table": {
+            "family": "inet",
+            "name": "box_priority",
+            "comment": "Essential services first; BOX second; other traffic third"
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "skuid"
+                    }
+                  },
+                  "right": 2300
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv4"
+                }
+              },
+              {
+                "counter": "proxy_ipv4"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "af41"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "skuid"
+                    }
+                  },
+                  "right": 2300
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv6"
+                }
+              },
+              {
+                "counter": "proxy_ipv6"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip6",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "af41"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "payload": {
+                      "protocol": "tcp",
+                      "field": "sport"
+                    }
+                  },
+                  "right": 443
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "payload": {
+                      "protocol": "ip",
+                      "field": "dscp"
+                    }
+                  },
+                  "right": "af41"
+                }
+              },
+              {
+                "counter": "https_ipv4"
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "payload": {
+                      "protocol": "tcp",
+                      "field": "sport"
+                    }
+                  },
+                  "right": 443
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "payload": {
+                      "protocol": "ip6",
+                      "field": "dscp"
+                    }
+                  },
+                  "right": "af41"
+                }
+              },
+              {
+                "counter": "https_ipv6"
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "payload": {
+                      "protocol": "tcp",
+                      "field": "sport"
+                    }
+                  },
+                  "right": {
+                    "set": [
+                      22,
+                      53,
+                      10000,
+                      20000
+                    ]
+                  }
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv4"
+                }
+              },
+              {
+                "counter": "essential"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "cs6"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "payload": {
+                      "protocol": "tcp",
+                      "field": "sport"
+                    }
+                  },
+                  "right": {
+                    "set": [
+                      22,
+                      53,
+                      10000,
+                      20000
+                    ]
+                  }
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv6"
+                }
+              },
+              {
+                "counter": "essential"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip6",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "cs6"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "payload": {
+                      "protocol": "udp",
+                      "field": "sport"
+                    }
+                  },
+                  "right": {
+                    "set": [
+                      53,
+                      123
+                    ]
+                  }
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv4"
+                }
+              },
+              {
+                "counter": "essential"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "cs6"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "payload": {
+                      "protocol": "udp",
+                      "field": "sport"
+                    }
+                  },
+                  "right": {
+                    "set": [
+                      53,
+                      123
+                    ]
+                  }
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv6"
+                }
+              },
+              {
+                "counter": "essential"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip6",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "cs6"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "skuid"
+                    }
+                  },
+                  "right": {
+                    "set": [
+                      42,
+                      104,
+                      991
+                    ]
+                  }
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv4"
+                }
+              },
+              {
+                "counter": "essential"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "cs6"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "box_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "skuid"
+                    }
+                  },
+                  "right": {
+                    "set": [
+                      42,
+                      104,
+                      991
+                    ]
+                  }
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv6"
+                }
+              },
+              {
+                "counter": "essential"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip6",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "cs6"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    },
+    "whatsapp_priority": {
+      "nftables": [
+        {
+          "chain": {
+            "family": "inet",
+            "table": "whatsapp_priority",
+            "name": "output",
+            "type": "route",
+            "hook": "output",
+            "prio": -141,
+            "policy": "accept"
+          }
+        },
+        {
+          "counter": {
+            "family": "inet",
+            "table": "whatsapp_priority",
+            "name": "gateway_ipv4"
+          }
+        },
+        {
+          "counter": {
+            "family": "inet",
+            "table": "whatsapp_priority",
+            "name": "gateway_ipv6"
+          }
+        },
+        {
+          "table": {
+            "family": "inet",
+            "name": "whatsapp_priority",
+            "comment": "WhatsApp resource priority; shared BOX AF41 class"
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "whatsapp_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "skuid"
+                    }
+                  },
+                  "right": 2301
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv4"
+                }
+              },
+              {
+                "counter": "gateway_ipv4"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "af41"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "whatsapp_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "skuid"
+                    }
+                  },
+                  "right": 2301
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv6"
+                }
+              },
+              {
+                "counter": "gateway_ipv6"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip6",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "af41"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "whatsapp_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "skuid"
+                    }
+                  },
+                  "right": 2302
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv4"
+                }
+              },
+              {
+                "counter": "gateway_ipv4"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "af41"
+                }
+              }
+            ]
+          }
+        },
+        {
+          "rule": {
+            "family": "inet",
+            "table": "whatsapp_priority",
+            "chain": "output",
+            "expr": [
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "oifname"
+                    }
+                  },
+                  "right": "synthetic0"
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "skuid"
+                    }
+                  },
+                  "right": 2302
+                }
+              },
+              {
+                "match": {
+                  "op": "==",
+                  "left": {
+                    "meta": {
+                      "key": "nfproto"
+                    }
+                  },
+                  "right": "ipv6"
+                }
+              },
+              {
+                "counter": "gateway_ipv6"
+              },
+              {
+                "mangle": {
+                  "key": {
+                    "payload": {
+                      "protocol": "ip6",
+                      "field": "dscp"
+                    }
+                  },
+                  "value": "af41"
+                }
+              }
+            ]
+          }
+        }
+      ]
+    }
+  },
+  "tc": {
+    "filter": [
+      {
+        "chain": 0,
+        "kind": "flower",
+        "options": {
+          "classid": "b040:1",
+          "handle": 1,
+          "keys": {
+            "eth_type": "ipv4",
+            "ip_tos": 192,
+            "ip_tos_mask": "fc"
+          },
+          "not_in_hw": true,
+          "skip_hw": true
+        },
+        "pref": 10,
+        "protocol": "ip"
+      },
+      {
+        "chain": 0,
+        "kind": "flower",
+        "options": {
+          "classid": "b040:1",
+          "handle": 1,
+          "keys": {
+            "eth_type": "ipv6",
+            "ip_tos": 192,
+            "ip_tos_mask": "fc"
+          },
+          "not_in_hw": true,
+          "skip_hw": true
+        },
+        "pref": 11,
+        "protocol": "ipv6"
+      },
+      {
+        "chain": 0,
+        "kind": "flower",
+        "options": {
+          "classid": "b040:2",
+          "handle": 1,
+          "keys": {
+            "eth_type": "ipv4",
+            "ip_tos": 136,
+            "ip_tos_mask": "fc"
+          },
+          "not_in_hw": true,
+          "skip_hw": true
+        },
+        "pref": 20,
+        "protocol": "ip"
+      },
+      {
+        "chain": 0,
+        "kind": "flower",
+        "options": {
+          "classid": "b040:2",
+          "handle": 1,
+          "keys": {
+            "eth_type": "ipv6",
+            "ip_tos": 136,
+            "ip_tos_mask": "fc"
+          },
+          "not_in_hw": true,
+          "skip_hw": true
+        },
+        "pref": 21,
+        "protocol": "ipv6"
+      }
+    ],
+    "qdisc": [
+      {
+        "handle": "b040:",
+        "kind": "ets",
+        "options": {
+          "bands": 3,
+          "priomap": [
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2,
+            2
+          ],
+          "quanta": [
+            12000,
+            1500
+          ],
+          "strict": 1
+        },
+        "root": true
+      },
+      {
+        "handle": "b041:",
+        "kind": "fq_codel",
+        "options": {
+          "drop_batch": 64,
+          "ecn": true,
+          "flows": 1024,
+          "interval": 99999,
+          "limit": 10240,
+          "memory_limit": 33554432,
+          "quantum": 1514,
+          "target": 4999
+        },
+        "parent": "b040:1"
+      },
+      {
+        "handle": "b042:",
+        "kind": "fq_codel",
+        "options": {
+          "drop_batch": 64,
+          "ecn": true,
+          "flows": 1024,
+          "interval": 99999,
+          "limit": 10240,
+          "memory_limit": 33554432,
+          "quantum": 1514,
+          "target": 4999
+        },
+        "parent": "b040:2"
+      },
+      {
+        "handle": "b043:",
+        "kind": "fq_codel",
+        "options": {
+          "drop_batch": 64,
+          "ecn": true,
+          "flows": 1024,
+          "interval": 99999,
+          "limit": 10240,
+          "memory_limit": 33554432,
+          "quantum": 1514,
+          "target": 4999
+        },
+        "parent": "b040:3"
+      }
+    ]
+  }
+}

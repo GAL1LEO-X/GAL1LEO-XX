@@ -1,0 +1,6 @@
+**
+!Dockerfile
+!runtime/
+!runtime/gows
+!runtime/dist/
+!runtime/dist/**

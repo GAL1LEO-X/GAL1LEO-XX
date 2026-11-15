@@ -1,0 +1,22 @@
+# INACTIVE TEMPLATE ONLY. No account, service, session or OAuth registration.
+# Empty owner/client fields deliberately fail Settings validation.
+# Activation requires a separate mandate; never copy Example owner's identity or secrets.
+[bridge]
+database = "/UNCONFIGURED/secondary-next/archive.sqlite"
+public_url = "https://secondary-next.example.invalid"
+issuer = "https://login.example.invalid"
+jwks_url = "https://login.example.invalid/.well-known/jwks.json"
+owner_subject = ""
+oauth_client_ids = []
+webhook_secret_file = "/UNCONFIGURED/secondary-next/webhook.key"
+encryption_key_file = "/UNCONFIGURED/secondary-next/encryption.key"
+waha_key_file = "/UNCONFIGURED/secondary-next/waha.key"
+live_account_enabled = false
+send_enabled = false
+send_chat_ids = []
+allow_all_destinations = false
+account_actions_enabled = false
+link_enabled = false
+callback_hosts = []
+allowed_hosts = []
+profile_name = "WhatsApp Example user (inactive template)"

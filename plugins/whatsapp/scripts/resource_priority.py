@@ -1,0 +1,361 @@
+"""Authorized host administration only. Mutations require --apply.
+
+The existing BOX classifier owns tc and essential-service rules. This helper
+only marks dedicated WhatsApp users AF41 and enables proportional disk I/O.
+Enrolment never restarts an existing user manager or changes CPU/RAM limits.
+"""
+import argparse
+from contextlib import contextmanager
+from datetime import datetime, timezone
+import json
+import os
+from pathlib import Path
+import re
+import shutil
+import stat
+import subprocess
+import tempfile
+
+CONFIG = Path('/etc/whatsapp-resource-priority.json')
+BACKUPS = Path('/var/backups/whatsapp-resource-priority')
+CGROUP = Path('/sys/fs/cgroup')
+MARKER = '# Managed by WhatsApp resource priority.\n'
+TABLE_COMMENT = 'WhatsApp resource priority; shared BOX AF41 class'
+SERVICE = 'whatsapp-resource-priority.service'
+
+
+def run(*args, input=None, check=True):
+    result = subprocess.run(args, input=input, text=True, capture_output=True)
+    if check and result.returncode:
+        raise RuntimeError('Priority command failed: ' + args[0])
+    return result
+
+
+def account_details(user):
+    import pwd
+    if user == 'whatsappbridge':
+        base = 'whatsapp-personal'
+    elif re.fullmatch(r'wa-[a-z][a-z0-9-]{1,19}', user) and '--' not in user:
+        base = 'whatsapp-' + user[3:]
+    else:
+        raise ValueError('Only dedicated WhatsApp service accounts can be enrolled')
+    account = pwd.getpwnam(user)
+    home = Path('/var/lib') / (base + '-waha')
+    if account.pw_uid == 0 or account.pw_dir != str(home) or account.pw_shell != '/usr/sbin/nologin':
+        raise ValueError('WhatsApp account has an unexpected uid, home or shell')
+    return {'user': user, 'uid': account.pw_uid, 'gid': account.pw_gid, 'base': base, 'home': home}
+
+
+def load_config():
+    cfg = json.loads(CONFIG.read_text())
+    if set(cfg) != {'format', 'interface', 'io_device', 'users'} or cfg['format'] != 1:
+        raise ValueError('Unsupported priority configuration')
+    if not isinstance(cfg['interface'], str) or not re.fullmatch(r'[a-zA-Z0-9_.:-]{1,15}', cfg['interface']):
+        raise ValueError('Invalid network interface')
+    if not isinstance(cfg['io_device'], str) or not re.fullmatch(r'/dev/[a-zA-Z0-9_-]+', cfg['io_device']):
+        raise ValueError('Use the verified physical block device')
+    if not isinstance(cfg['users'], list) or any(not isinstance(u, str) for u in cfg['users']):
+        raise ValueError('Invalid WhatsApp account list')
+    if len(cfg['users']) != len(set(cfg['users'])):
+        raise ValueError('Duplicate WhatsApp accounts')
+    for user in cfg['users']:
+        account_details(user)
+    return cfg
+
+
+def unit_files(account):
+    uid, base, home = account['uid'], account['base'], account['home']
+    weights = MARKER + '[Service]\nCPUWeight=800\nIOWeight=800\n'
+    manager = (MARKER + '[Unit]\nRequires=' + SERVICE + '\nAfter=' + SERVICE + '\n'
+               '[Service]\nSlice=system.slice\nCPUWeight=800\nIOWeight=800\n'
+               'Delegate=cpu io memory pids\n')
+    return {
+        Path('/etc/systemd/system') / (base + '.service.d/60-whatsapp-priority.conf'): weights,
+        Path('/etc/systemd/system') / f'user@{uid}.service.d/60-whatsapp-priority.conf': manager,
+        home / '.config/systemd/user/whatsapp-waha.service.d/60-whatsapp-priority.conf': weights,
+        # The aggregate manager has 800 against sibling services. Its application
+        # slice must not lose its share internally to unrelated session scopes.
+        home / '.config/systemd/user/app.slice.d/60-whatsapp-priority.conf':
+            MARKER + '[Slice]\nCPUWeight=800\nIOWeight=800\n',
+    }
+
+
+def nft_script(cfg, *, exists):
+    uids = sorted({account_details(user)['uid'] for user in cfg['users']})
+    rules = []
+    for uid in uids:
+        for proto, field in (('ipv4', 'ip'), ('ipv6', 'ip6')):
+            rules.append(f'  oifname "{cfg["interface"]}" meta skuid {uid} meta nfproto {proto} '
+                         f'counter name gateway_{proto} {field} dscp set af41')
+    return ('delete table inet whatsapp_priority\n' if exists else '') + (
+        'table inet whatsapp_priority {\n'
+        f' comment "{TABLE_COMMENT}"\n'
+        ' counter gateway_ipv4 { }\n counter gateway_ipv6 { }\n'
+        ' chain output {\n'
+        # BOX runs at -140 and can subsequently promote essential traffic to CS6.
+        '  type route hook output priority -141; policy accept;\n'
+        + '\n'.join(rules) + '\n }\n}\n')
+
+
+def nft_exists():
+    result = run('nft', '-j', 'list', 'table', 'inet', 'whatsapp_priority', check=False)
+    if result.returncode:
+        # A permissions or netlink failure must not masquerade as absence.
+        run('nft', 'list', 'tables')
+        return False
+    entries = json.loads(result.stdout)['nftables']
+    if not any(e.get('table', {}).get('comment') == TABLE_COMMENT for e in entries):
+        raise ValueError('Refusing to replace an unowned nftables table')
+    return True
+
+
+def device_number(cfg):
+    device = Path(cfg['io_device'])
+    info = device.stat()
+    if not stat.S_ISBLK(info.st_mode):
+        raise ValueError('I/O target is not a block device')
+    number = f'{os.major(info.st_rdev)}:{os.minor(info.st_rdev)}'
+    sysdev = Path('/sys/dev/block') / number
+    if (sysdev / 'partition').exists() or not (sysdev / 'device').exists():
+        raise ValueError('I/O target must be the verified physical disk, not a partition or mapper')
+    if not (CGROUP / 'io.cost.qos').is_file():
+        raise ValueError('The kernel does not expose the I/O cost controller')
+    return number
+
+
+def qos_line(number):
+    return next((line for line in (CGROUP / 'io.cost.qos').read_text().splitlines()
+                 if line.split()[0] == number), '')
+
+
+def check_classifiers(cfg):
+    """Validate the supported BOX flower profile, including all ECN values."""
+    filters = json.loads(run('tc', '-j', 'filter', 'show', 'dev', cfg['interface'], 'parent', 'b040:').stdout)
+    expected = {(proto, tos): cls for proto in ('ip', 'ipv6')
+                for tos, cls in ((0x88, 'b040:2'), (0xc0, 'b040:1'))}
+    seen = set()
+    for item in filters:
+        if 'options' not in item:  # tc also emits one header per preference.
+            continue
+        options = item['options']
+        keys = options.get('keys', {})
+        number = lambda value: int(value, 0) if isinstance(value, str) else value
+        # iproute2 print_hex emits JSON strings such as "fc", without "0x".
+        mask = keys.get('ip_tos_mask')
+        mask = int(mask, 16) if isinstance(mask, str) else mask
+        key = (item.get('protocol'), number(keys.get('ip_tos')))
+        if (item.get('kind') != 'flower' or item.get('chain', 0) != 0
+                or key not in expected or key in seen
+                or options.get('classid') != expected[key] or options.get('skip_sw')
+                or options.get('actions') or mask != 0xfc
+                or set(keys) != {'eth_type', 'ip_tos', 'ip_tos_mask'}
+                or keys['eth_type'] != ('ipv4' if key[0] == 'ip' else 'ipv6')):
+            raise ValueError('Unsupported BOX classifier: require IPv4/IPv6 AF41 -> b040:2 and CS6 -> b040:1, mask 0xfc, without competing filters')
+        seen.add(key)
+    if seen != set(expected):
+        raise ValueError('Missing BOX AF41/CS6 classifier for IPv4 or IPv6')
+
+    entries = json.loads(run('nft', '-j', 'list', 'table', 'inet', 'box_priority').stdout)['nftables']
+    chains = [entry['chain'] for entry in entries if 'chain' in entry]
+    if (len(chains) != 1 or any(chains[0].get(key) != value for key, value in
+            {'family': 'inet', 'table': 'box_priority', 'name': 'output', 'type': 'route',
+             'hook': 'output', 'prio': -140, 'policy': 'accept'}.items())):
+        raise ValueError('BOX priority must follow WhatsApp marking in the output route hook at priority -140')
+    essential = set()
+    for entry in entries:
+        for expression in entry.get('rule', {}).get('expr', []):
+            mangle = expression.get('mangle', {})
+            key = mangle.get('key', {})
+            payload = key.get('payload', {})
+            if key.get('meta', {}).get('key') == 'priority':
+                raise ValueError('BOX skb priority override can bypass AF41 classification')
+            if payload.get('field') == 'dscp':
+                value = mangle.get('value')
+                if value not in ('af41', 'cs6', 34, 48):
+                    raise ValueError('BOX rewrites DSCP outside the supported AF41/CS6 policy')
+                if value in ('cs6', 48):
+                    essential.add(payload.get('protocol'))
+    if essential != {'ip', 'ip6'}:
+        raise ValueError('BOX essential-service CS6 marking is missing for IPv4 or IPv6')
+
+
+def check_network(cfg):
+    qdiscs = json.loads(run('tc', '-j', 'qdisc', 'show', 'dev', cfg['interface']).stdout)
+    root = next((q for q in qdiscs if q.get('root')), {})
+    options = root.get('options', {})
+    if (root.get('kind') != 'ets' or root.get('handle') != 'b040:'
+            or options.get('nbands', options.get('bands')) != 3):
+        raise ValueError('The three-class BOX queue must already be active')
+    if (options.get('strict') != 1 or options.get('quanta') != [12000, 1500]
+            or options.get('priomap') != [2] * 16):
+        raise ValueError('BOX queue must preserve strict essential priority, 8:1 weights and the ordinary default class')
+    check_classifiers(cfg)
+    exists = nft_exists()
+    script = nft_script(cfg, exists=exists)
+    run('nft', '--check', '-f', '-', input=script)
+    return exists, script
+
+
+def apply_policy(cfg, *, apply=False):
+    number = device_number(cfg)
+    exists, script = check_network(cfg)
+    before_qos = qos_line(number)
+    if not apply:
+        return {'checked': True, 'io_device': number, 'users': cfg['users'], 'mutated': False}
+    before_nft = run('nft', 'list', 'table', 'inet', 'whatsapp_priority').stdout if exists else ''
+    changed_io = 'enable=1' not in before_qos.split()
+    try:
+        if changed_io:
+            # Preserve existing model/QoS tuning: only enable weighting.
+            (CGROUP / 'io.cost.qos').write_text(number + ' enable=1\n')
+        run('nft', '-f', '-', input=script)
+    except Exception:
+        if changed_io:
+            (CGROUP / 'io.cost.qos').write_text(number + ' enable=0\n')
+        if exists:
+            run('nft', '-f', '-', input='delete table inet whatsapp_priority\n' + before_nft, check=False)
+        raise
+    return {'applied': True, 'io_device': number, 'qos': qos_line(number),
+            'users': cfg['users'], 'network_class': 'AF41 / b040:2'}
+
+
+def atomic_write(path, content, *, mode=0o644):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, name = tempfile.mkstemp(prefix='.' + path.name + '-', dir=path.parent)
+    try:
+        with os.fdopen(fd, 'w', encoding='utf-8', newline='\n') as stream:
+            stream.write(content)
+        os.chmod(name, mode)
+        os.replace(name, path)
+    finally:
+        Path(name).unlink(missing_ok=True)
+
+
+def user_directories(account, files):
+    """Only manage the systemd subtree; preserve the private home and .config."""
+    root = account['home'] / '.config/systemd'
+    directories = set()
+    for path in files:
+        if path.is_relative_to(root):
+            directories.update(parent for parent in path.parents if parent == root or parent.is_relative_to(root))
+    return sorted(directories, key=lambda path: len(path.parts))
+
+
+def directory_metadata(path):
+    if not path.exists():
+        return None
+    info = path.stat()
+    if not stat.S_ISDIR(info.st_mode):
+        raise ValueError('A priority directory is not a directory')
+    return {'uid': info.st_uid, 'gid': info.st_gid, 'mode': stat.S_IMODE(info.st_mode)}
+
+
+def readable_user_files(account, files):
+    for path in files:
+        if path.is_relative_to(account['home']):
+            run('runuser', '-u', account['user'], '--', 'test', '-r', str(path))
+
+
+@contextmanager
+def administration_lock(name='whatsapp-resource-priority'):
+    import fcntl
+    with (Path('/run/lock') / (name + '.lock')).open('a') as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        yield
+
+
+def enroll(cfg, user, *, apply=False):
+    account = account_details(user)
+    candidate = {**cfg, 'users': sorted(set(cfg['users']) | {user})}
+    files = unit_files(account)
+    for path in files:
+        if any(p.is_symlink() for p in (path, *path.parents)) or (path.exists() and not path.read_text().startswith(MARKER)):
+            raise ValueError('Refusing to overwrite an unowned priority drop-in')
+    directories = user_directories(account, files)
+    desired = {'uid': account['uid'], 'gid': account.get('gid', account['uid']), 'mode': 0o700}
+    metadata = {path: directory_metadata(path) for path in directories}
+    changed_directories = {path: old for path, old in metadata.items() if old != desired}
+    if directories:
+        run('runuser', '-u', account['user'], '--', 'test', '-x', str(account['home'] / '.config'))
+    device_number(candidate)
+    check_network(candidate)
+    if not apply:
+        return {'user': user, 'uid': account['uid'], 'files': [str(p) for p in files],
+                'directories': [str(p) for p in changed_directories], 'mutated': False}
+    files[CONFIG] = json.dumps(candidate, indent=2) + '\n'
+    originals = {p: p.read_bytes() if p.exists() else None for p in files}
+    changed = {p: text for p, text in files.items() if originals[p] != text.encode()}
+    backup = None
+    if changed or changed_directories:
+        BACKUPS.mkdir(parents=True, exist_ok=True, mode=0o700)
+        backup = BACKUPS / datetime.now(timezone.utc).strftime('enroll-%Y%m%dT%H%M%S%fZ')
+        backup.mkdir(mode=0o700)
+        for index, path in enumerate(changed):
+            if path.exists():
+                shutil.copy2(path, backup / str(index))
+        (backup / 'manifest.json').write_text(json.dumps({'format': 2,
+            'files': [{'path': str(p), 'copy': str(i) if originals[p] is not None else None}
+                      for i, p in enumerate(changed)],
+            'directories': [{'path': str(p), 'previous': old} for p, old in changed_directories.items()]}, indent=2))
+        try:
+            for path in changed_directories:
+                path.mkdir(exist_ok=True, mode=0o700)
+                os.chown(path, desired['uid'], desired['gid'])
+                path.chmod(desired['mode'])
+            for path, content in changed.items():
+                atomic_write(path, content)
+            readable_user_files(account, files)
+            run('systemctl', 'daemon-reload')
+            run('systemctl', 'reload-or-restart', SERVICE)
+        except Exception:
+            for path in changed:
+                if originals[path] is None:
+                    path.unlink(missing_ok=True)
+                else:
+                    atomic_write(path, originals[path].decode())
+            for path, old in reversed(list(changed_directories.items())):
+                if old is None:
+                    if path.exists():
+                        path.rmdir()
+                else:
+                    os.chown(path, old['uid'], old['gid'])
+                    path.chmod(old['mode'])
+            run('systemctl', 'daemon-reload', check=False)
+            run('systemctl', 'reload-or-restart', SERVICE, check=False)
+            raise
+    else:
+        readable_user_files(account, files)
+    control_group = run('systemctl', 'show', f'user@{account["uid"]}.service',
+                        '-p', 'ControlGroup', '--value').stdout.strip()
+    return {'enrolled': user, 'changed': [str(p) for p in changed],
+            'directories_changed': [str(p) for p in changed_directories],
+            'backup': str(backup) if backup else None,
+            'manager_restart_required': bool(control_group and control_group != f'/system.slice/user@{account["uid"]}.service')}
+
+
+def main():
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('action', choices=('check', 'apply', 'enroll'))
+    parser.add_argument('--user')
+    parser.add_argument('--apply', action='store_true')
+    args = parser.parse_args()
+    if args.action == 'enroll' and not args.user:
+        parser.error('enroll requires --user')
+    if args.action == 'check' and args.apply:
+        parser.error('check is read-only')
+    if os.geteuid() != 0:
+        parser.error('Run as the authorized host administrator')
+    if args.apply:
+        # Enrolment reloads the service synchronously. Its policy lock must be
+        # distinct from the enrolment lock, or the two processes would deadlock.
+        with administration_lock('whatsapp-resource-priority' if args.action == 'enroll' else 'whatsapp-priority-policy'):
+            cfg = load_config()
+            result = enroll(cfg, args.user, apply=True) if args.action == 'enroll' else apply_policy(cfg, apply=True)
+    else:
+        cfg = load_config()
+        result = enroll(cfg, args.user) if args.action == 'enroll' else apply_policy(cfg)
+    print(json.dumps(result))
+
+
+if __name__ == '__main__':
+    main()
