@@ -1,3 +1,11 @@
+# Historical provider build recipes
+
+This directory records an earlier build checkpoint. Its recorded binary hashes
+refer to that historical build and must not be used to validate the current
+provider candidate. Use [the public reconstruction guide](../README.md),
+[the current QA174 recipe](../qa174/README.md) and their exact manifests for
+the candidate source; reconstructing source does not qualify a runtime image.
+
 # Companion build recipes
 
 Current provider **0.8.2** applies the original patches, then QA120 (WAHA),

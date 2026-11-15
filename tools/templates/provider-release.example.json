@@ -138,10 +138,10 @@
     "sha256": "36bd51380bf74e4b0dd9353798c76feabb0fdc29dc1a1a94d2c726cfb8e89c16"
   },
   "repository": "GAL1LEO-X/GAL1LEO-XX",
-  "reuse_policy": "Exact QA174 WAHA/GOWS inputs from provider source 81f98a44a41ccb805bcbb74ca31e60111beb0126, preserved in the release candidate. Two reproducible offline GOWS builds with pinned compiler; complete/race regressions; matching WAHA inventories; exact complete runtime qualified without accounts or network in both intended rootless stores. Twelve provider 0.8.6 base layers and runtime configuration are preserved with one added layer containing compiled WAHA and GOWS. New WAHA/GOWS corresponding sources, OCI runtime and evidence/notices; six dependency collections retain original bytes and names. All ten assets have real IDs and verified byte counts/digests in the same provider 0.8.7 draft, finalized only after main CI and review. No historical resend, cache repair or production ledger acknowledgement. Dependency-source provenance limits remain documented. Any provider fingerprint change requires a new build and qualification before changing this policy.",
+  "reuse_policy": "Unconfigured example only. Replace all placeholder IDs and hashes with independently reviewed artifact identities, prove the exact provider input fingerprint, and qualify the resulting runtime before allowing release preparation. This file does not attest any build, release, account, installation or deployment.",
   "runtime": {
     "config_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-    "gows_sha256": "01250b1cd8bc6a2d801360337aa0a5b834bc398d4cc8a94ab20a57b373773fe4",
+    "gows_sha256": "0000000000000000000000000000000000000000000000000000000000000000",
     "manifest_digest": "sha256:0000000000000000000000000000000000000000000000000000000000000000"
   },
   "schema_version": 1,

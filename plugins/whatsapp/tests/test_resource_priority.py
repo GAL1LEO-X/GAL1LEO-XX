@@ -40,7 +40,8 @@ def test_future_tenant_inherits_priorities_with_original_cpu_ram_limits(monkeypa
         assert 'CPUQuota=200%' in files[name]
         assert 'MemoryMax='+memory in files[name]
     assert 'CPUAffinity=0-3' in files['gateway']
-    assert 'BoxPriorityDSCP 34' in files['apache']
+    # Portable rendering must not assume an installed foreign Apache module.
+    assert 'BoxPriorityDSCP' not in files['apache']
 
 
 def test_manager_competes_with_box_and_delegates_io_without_changing_caps(priority):

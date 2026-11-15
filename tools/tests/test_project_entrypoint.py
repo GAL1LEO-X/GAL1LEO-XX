@@ -47,10 +47,10 @@ class EntryTests(unittest.TestCase):
         base = shutil.which('python3') or sys.executable
         result = command(base, '-S', ROOT / 'tools/project.py', 'list')
         self.assertIn('whatsapp', result.stdout)
-        result = command(base, '-S', ROOT / 'tools/project.py', 'operations', 'route',
-                         'whatsapp', '--kind', 'backend', '--action', 'deploy', '--commit', 'a'*40)
-        self.assertEqual(json.loads(result.stdout)['status'], 'plan-only')
-        self.assertEqual(json.loads(result.stdout)['inputs'], {'action': 'deploy', 'commit': 'a'*40})
+        result = command(base, '-S', ROOT / 'tools/project.py', '--help')
+        self.assertIn('prepare', result.stdout)
+        self.assertIn('build', result.stdout)
+        self.assertNotIn('operations', result.stdout)
 
     def test_operations_cli_rejects_the_retired_receiver_without_execution(self):
         result = subprocess.run([sys.executable, '-S', str(ROOT / 'tools/project.py'), 'operations', 'route',
@@ -175,16 +175,15 @@ class EntryTests(unittest.TestCase):
                 self.assertEqual(project.projects(root), ['alpha', 'beta'])
                 command(shutil.which('python3') or sys.executable, '-S', ROOT / 'tools/project.py',
                         '--root', root, 'ci', '--runtime', runtime, '--venv-mode', 'isolated', '--python', sys.executable)
-                # Execute the actual workflow run block: a successful plugin
-                # check producing tracked OR untracked files must fail CI.
+                # Execute real project checks, then the public CI cleanliness
+                # gate: neither tracked nor untracked output may pass unnoticed.
                 wrapper = root / 'tools/project.py'; wrapper.parent.mkdir()
                 wrapper.write_text('import subprocess,sys\nraise SystemExit(subprocess.call([sys.executable,' +
                     repr(str(ROOT / 'tools/project.py')) + ',"--root",' + repr(str(root)) + ',*sys.argv[1:]]))\n')
-                workflow = (ROOT / '.github/workflows/checks.yml').read_text()
-                step = workflow.split('      - name: Check additional registered projects without repeating WhatsApp\n', 1)[1].split('      - uses:', 1)[0]
-                script = '\n'.join(line[10:] for line in step.splitlines() if line.startswith('          '))
-                script = script.replace('${{ matrix.python }}', runtime)
-                script = script.replace('--skip whatsapp', '')  # fixture registers only alpha/beta
+                workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+                step = workflow.split('      - name: Check source remains unchanged\n', 1)[1].split('      - ', 1)[0]
+                cleanliness = '\n'.join(line[10:] for line in step.splitlines() if line.startswith('          '))
+                script = f'{sys.executable} tools/project.py ci --runtime {runtime} --venv-mode isolated --python {sys.executable}\n' + cleanliness
                 version_test = root / 'plugins/alpha/tests/test_version.py'
                 original_test = version_test.read_text()
                 for target in ('README.md', 'generated-untracked.txt'):

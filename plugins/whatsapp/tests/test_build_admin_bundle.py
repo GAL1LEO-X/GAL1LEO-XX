@@ -128,6 +128,8 @@ def test_bundled_exporter_has_its_dependency_and_supports_existing_templates(sou
         (PLUGIN/'scripts/plugin_skills.py').read_bytes()).hexdigest()
     installed=tmp_path/'installed'
     shutil.copytree(PLUGIN/'plugin',installed/'plugin')
+    for notice in ('LICENSE','NOTICE','THIRD_PARTY_NOTICES.md'):
+        shutil.copyfile(PLUGIN/notice,installed/notice)
     code='''
 import sys, shutil, zipfile
 from pathlib import Path
@@ -146,6 +148,7 @@ instance=Instance('sample','Synthetic','11111111-1111-4111-8111-111111111111',88
 export_plugin.export(instance,installed/'new.zip',installed)
 with zipfile.ZipFile(installed/'new.zip') as archive:
     assert len([name for name in archive.namelist() if name.endswith('/SKILL.md')])==3
+    assert {'LICENSE','NOTICE','THIRD_PARTY_NOTICES.md'} <= set(archive.namelist())
 for name in ('whatsapp-use','whatsapp-transcription'):
     shutil.rmtree(installed/'plugin/skills'/name)
 export_plugin.export(instance,installed/'old.zip',installed)

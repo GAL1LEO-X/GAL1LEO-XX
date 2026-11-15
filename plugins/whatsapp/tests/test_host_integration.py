@@ -346,6 +346,9 @@ def test_actual_qos_binding_accepts_http_and_tls_publication_then_new_upgrade_re
         root_path=root.base,runner=runner).preflight()
     try: first.ensure_https(tenancy.render_apache(instance))
     finally: first.close()
+    published = root.read_bytes('/etc/apache2/sites-available/'+instance.base+'-https.conf')
+    assert published.count(b'    BoxPriorityDSCP 34\n') == 1
+    assert b'BoxPriorityDSCP' not in tenancy.render_apache(instance).encode()
     new_plan = copy.deepcopy(plan)
     new_plan['operation_id'] = 'c'*32
     new_plan['frontend']['registry'] = integration.decode(root.read_bytes(integration.REGISTRY))
@@ -610,3 +613,23 @@ def test_isolated_certificate_plan_waits_for_host_issuance_without_shared_fallba
         assert (front['lineage']+'/fullchain.pem').encode() in body
         assert ('/etc/letsencrypt/live/'+instance.hostname).encode() not in body
     finally:context.close()
+
+
+@pytest.mark.parametrize('directive', [
+    '    BoxPriorityDSCP 48\n',
+    '    BoxPriorityDSCP 34\n    BoxPriorityDSCP 34\n',
+])
+def test_opted_in_qos_rejects_unreviewed_marks_before_frontend_publication(setup, directive):
+    root, instance, _, _, load = setup
+    current = load()
+    try:
+        current.preflight()
+        body = tenancy.render_apache(instance).replace(
+            '<VirtualHost *:443>\n', '<VirtualHost *:443>\n' + directive, 1)
+        target = '/etc/apache2/sites-available/'+instance.base+'-https.conf'
+        before = root.snapshot(target)
+        with pytest.raises(ValueError, match='Unexpected QoS directive in opted-in frontend'):
+            current._candidate(body, tls=True)
+        assert root.snapshot(target) == before
+    finally:
+        current.close()

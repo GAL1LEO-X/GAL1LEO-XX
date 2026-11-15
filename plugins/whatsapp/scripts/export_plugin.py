@@ -29,15 +29,20 @@ def export(instance, output, source):
         'This export bundles remote MCP server configuration: a personal ChatGPT upload may make it available only on desktop.',
         'For ChatGPT web, register the MCP connection in your own account first, then build the web variant with .app.json referencing that registration and no mcp.json. Do not copy .app.json from another user.','',
         *[f'- {key}: {details[key]}' for key in ('username','pairing_url','mcp_url','oauth_client_id','oauth_issuer','oauth_client_auth_method','callback')],
-        '', 'Il client OAuth e pubblico: lasciare vuoto il client secret.',
+        '', 'The OAuth client is public: leave the client secret empty.',
         ('Sign in with your OIDC provider credentials; setup does not create or supply passwords.'
-         if instance.auth_mode=='external-oidc' else 'La password del servizio viene consegnata separatamente.'),
+         if instance.auth_mode=='external-oidc' else 'The service password is provided separately.'),
         'Open the connection page with your own account, then approve the code or QR on your own phone.',
         'An existing session for another user is rejected: use your own browser profile or sign out of the identity portal.',''])
     files={'plugin.json':json.dumps(manifest,ensure_ascii=False,indent=2).encode(),
            'mcp.json':json.dumps(mcp,indent=2).encode(),
            'assets/whatsapp-gpt.png':(template/'assets/whatsapp-gpt.png').read_bytes(),
            'CONFIGURATION.md':guide.encode()}
+    for notice in ('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'):
+        selected = source/notice
+        if selected.is_symlink() or not selected.is_file():
+            raise ValueError('License notices must be regular source files')
+        files[notice] = selected.read_bytes()
     files.update(_skills.collect(template,instance.public_url+'/connect',allow_legacy=True))
     output.parent.mkdir(parents=True,exist_ok=True)
     with zipfile.ZipFile(output,'x',zipfile.ZIP_DEFLATED) as archive:

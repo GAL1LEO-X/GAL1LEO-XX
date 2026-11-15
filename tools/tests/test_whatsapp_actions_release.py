@@ -89,27 +89,16 @@ def test_workflow_divergence_blocks_real_entrypoint_before_download_or_writes(tm
     assert not args.output.exists()
 
 
-def test_workflow_only_manual_and_write_job_is_explicitly_gated():
+def test_public_ci_has_no_release_write_permissions_or_dispatch():
     root = Path(__file__).resolve().parents[2]
-    workflow = (root/'.github/workflows/whatsapp-release.yml').read_text()
-    # Structural policy assertions; syntax is checked separately with actionlint.
-    triggers = workflow.split('\non:\n',1)[1].split('\npermissions:',1)[0]
-    assert re.findall(r'^  ([a-z_]+):',triggers,re.M) == ['workflow_dispatch']
-    assert len(re.findall(r'^      [a-z_]+:',triggers,re.M)) <= 10
-    assert '\npermissions: {}\n' in workflow
-    assert '\n  cancel-in-progress: false\n' in workflow
-    prepare, publish = workflow.split('\njobs:\n  prepare:\n',1)[1].split('\n  publish:\n')
-    assert 'contents: read' in prepare and 'contents: write' not in prepare
-    assert 'contents: write' in publish and 'actions: read' in publish
-    assert "vars.WHATSAPP_RELEASE_PUBLISH_ENABLED == 'true'" in publish.split('steps:',1)[0]
-    for job in (prepare,publish):
-        assert "github.ref == 'refs/heads/main'" in job.split('steps:',1)[0]
-        assert 'runs-on: ubuntu-24.04' in job
-        uses = re.findall(r'^      - uses: ([^\n#]+)',job,re.M)
-        assert all(re.fullmatch(r'actions/[a-z-]+@[0-9a-f]{40}',use.strip()) for use in uses)
-        assert job.count('persist-credentials: false') == job.count('uses: actions/checkout@')
-        # Dispatch strings only enter quoted environment variables, never shell source.
-        for shell in re.findall(r'        run: (.*?)(?=\n      - |\Z)',job,re.S):
-            assert '${{ inputs.' not in shell
-    assert 'bootstrap.sh' not in publish and 'pip install' not in publish and 'docker' not in publish
-    assert 'ssh' not in publish and 'develative' not in publish
+    workflow = (root / '.github/workflows/ci.yml').read_text()
+    assert not (root / '.github/workflows/whatsapp-release.yml').exists()
+    triggers = workflow.split('\non:\n', 1)[1].split('\npermissions:', 1)[0]
+    assert re.findall(r'^  ([a-z_]+):', triggers, re.M) == ['pull_request', 'push']
+    permissions = workflow.split('\npermissions:\n', 1)[1].split('\njobs:', 1)[0]
+    assert permissions.strip() == 'contents: read'
+    assert not re.search(r'^\s+contents: write$', workflow, re.M)
+    assert 'workflow_dispatch' not in workflow
+    assert 'secrets.' not in workflow
+    assert 'whatsapp_actions_release.py' not in workflow
+    assert 'whatsapp_release_publish.py' not in workflow

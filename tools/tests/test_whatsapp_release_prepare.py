@@ -43,13 +43,22 @@ class PrepareReleaseTests(unittest.TestCase):
         self.write('plugins/whatsapp/deploy/images.lock.json', b'{}\n')
         self.write('plugins/whatsapp/deploy/whatsapp-waha.container', b'# synthetic\n')
         initial = self.commit()
-        original = json.loads((ROOT / prepare.LOCK_PATH).read_text())
+        original = json.loads((ROOT / 'tools/templates/provider-release.example.json').read_text())
         self.lock = copy.deepcopy(original)
+        # Qualify an entirely synthetic release policy in this temporary Git
+        # repository. The public operator template stays deliberately unusable.
+        self.lock.update(source_release_id=101, source_tag='whatsapp-provider/v9.8.6',
+                         source_commit=initial)
+        self.lock['runtime'] = {'config_digest': 'sha256:' + '1' * 64,
+                                'manifest_digest': 'sha256:' + '2' * 64,
+                                'gows_sha256': '3' * 64}
         entries = prepare.provider_fingerprint(self.repo, initial)
         self.lock['fingerprint']['entries'] = entries
         self.lock['fingerprint']['sha256'] = hashlib.sha256(prepare.canonical_json(entries)).hexdigest()
         downloads = {}
-        for item in self.lock['assets']:
+        for index, item in enumerate(self.lock['assets'], start=1):
+            item['origin'].update(release_id=101, asset_id=1000 + index,
+                                  tag=self.lock['source_tag'])
             content = ('synthetic pinned asset ' + item['role'] + '\n').encode()
             item['bytes'], item['sha256'] = len(content), hashlib.sha256(content).hexdigest()
             downloads[item['origin']['asset_id']] = content
@@ -100,6 +109,15 @@ class PrepareReleaseTests(unittest.TestCase):
                        prepared_run=self.run, qualification_runner=self.qualified)
         options.update(changes)
         return prepare.prepare_candidate(**options)
+
+    def test_unconfigured_public_template_cannot_authorize_a_release(self):
+        template = (ROOT / 'tools/templates/provider-release.example.json').read_bytes()
+        self.write(prepare.LOCK_PATH, template)
+        workflow = self.commit()
+        with self.assertRaisesRegex(prepare.ReleaseError, 'Invalid source release ID'):
+            self.call(workflow_commit=workflow)
+        self.assertFalse(self.output.exists())
+        self.assertEqual(self.client.calls, [])
 
     def test_complete_current_candidate_from_git_with_ten_pinned_downloads(self):
         self.write('plugins/whatsapp/README.md', b'Uncommitted material must not be used\n')

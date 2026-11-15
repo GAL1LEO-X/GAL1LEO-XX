@@ -2,7 +2,7 @@
   "$schema": "https://agent-plugins.org/schemas/1.0.0/plugin.schema.json",
   "name": "tesla-personal",
   "version": "1.0.4",
-  "description": "Connection personale a Tesla Fleet API, comandi confermati e telemetria osservata.",
+  "description": "Self-hosted Tesla Fleet API connection, confirmed commands and observed telemetry.",
   "author": {
     "name": "GAL1LEO",
     "email": "info@gal1leo.com"

@@ -305,7 +305,7 @@ def test_used_login_context_survives_restart_and_cannot_be_replayed(portal):
     # Logging out/deleting the session must not discard its separate replay guard.
     with app.state.service.store.db() as db: db.execute('DELETE FROM link_sessions')
     restarted=LinkPortal(app.state.service,oauth_client=app.state.link_portal.client)
-    with pytest.raises(LinkError,match='già utilizzata'):
+    with pytest.raises(LinkError,match='already used'):
         restarted.exchange(callback_request(query,proof))
     assert len(exchange['posts'])==1
 
@@ -354,7 +354,7 @@ def test_login_context_expiring_during_exchange_or_database_wait_cannot_create_s
             'access_token':token(azp='pair-client',scope='whatsapp:link'),
             'id_token':token(aud='pair-client',nonce=query['nonce'])})
     def attempt():
-        with pytest.raises(LinkError,match='già scaduto'):
+        with pytest.raises(LinkError,match='already expired'):
             link.exchange(callback_request(query,proof))
     original_client=link.client
     with httpx.Client(transport=httpx.MockTransport(post)) as oauth:
@@ -441,7 +441,7 @@ def test_new_login_invalidates_only_previous_browser_session_even_when_wrong_own
     assert response.status_code==403
     assert 'WhatsApp · synthetic owner' in response.text
     assert 'this profile accepts only its owner' in response.text
-    assert 'finestra privata' in response.text
+    assert 'private window' in response.text
     assert 'href="/connect/login"' in response.text
     assert client.cookies.get(COOKIE) is None
     assert client.get('/connect/api/status').status_code==401

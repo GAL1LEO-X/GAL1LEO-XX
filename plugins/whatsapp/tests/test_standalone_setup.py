@@ -93,6 +93,8 @@ def test_cli_to_config_proxy_certificate_and_portable_export(tmp_path,monkeypatc
     exporter=load_script('export_plugin',monkeypatch)
     output=tmp_path/'plugin.zip';exporter.export(item,output,PLUGIN)
     with zipfile.ZipFile(output) as archive:
+        assert {'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'} <= set(archive.namelist())
+        assert b'info@gal1leo.com' in archive.read('NOTICE')
         mcp=json.loads(archive.read('mcp.json'))
         assert mcp['mcpServers'][item.base]['url']==item.public_url+'/mcp'
         assert (item.public_url+'/connect').encode() in archive.read('skills/whatsapp-setup/SKILL.md')
@@ -100,8 +102,8 @@ def test_cli_to_config_proxy_certificate_and_portable_export(tmp_path,monkeypatc
         assert item.issuer in guide and item.chatgpt_callback in guide
         assert item.subject not in guide
         assert 'login.sally-browser' not in guide
-        assert 'il setup non crea o consegna password' in guide
-        assert 'configurazione di un server MCP remoto' in guide
+        assert 'setup does not create or supply passwords' in guide
+        assert 'remote MCP server configuration' in guide
     assert Instance(**item.record())==item
 
 

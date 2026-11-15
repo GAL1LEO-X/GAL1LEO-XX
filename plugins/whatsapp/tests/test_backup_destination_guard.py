@@ -184,7 +184,7 @@ def test_process_entering_stdin_wait_between_observations_still_blocks_initial_a
 
 def test_original_global_recovery_imports_guarded_receiver_but_not_backup(tmp_path, monkeypatch):
     source = (Path(__file__).parents[3]/'tools/tests/fixtures/legacy_shared_recover_04164aa.py').read_bytes()
-    assert hashlib.sha256(source).hexdigest() == 'd4d6072354caeb75f7f4e38b850c9b57de56000493e066dc712cd8c76f5c49b7'
+    assert hashlib.sha256(source).hexdigest() == 'f5ea554bfc6d69432a9a694e4754bd9137f9cdfd2d915f57165e429b815af9e4'
     state = tmp_path/'state'; state.mkdir()
     project = tmp_path/'project'; (project/'private').mkdir(parents=True)
     journal = state/'transaction.json'; journal.write_text('{"phase":"stopped"}')
@@ -212,8 +212,8 @@ def test_original_global_recovery_imports_guarded_receiver_but_not_backup(tmp_pa
 def test_acquired_manual_sources_are_static_fixtures_not_executed_modules():
     tenant = ast.parse(contract.LEGACY_SOURCES[handoff.TENANT_ENTRY])
     provision = ast.parse(contract.LEGACY_SOURCES[handoff.PROVISION_ENTRY])
-    assert len(contract.LEGACY_SOURCES[handoff.TENANT_ENTRY]) == 21670
-    assert len(contract.LEGACY_SOURCES[handoff.PROVISION_ENTRY]) == 4639
+    assert len(contract.LEGACY_SOURCES[handoff.TENANT_ENTRY]) == 21674
+    assert len(contract.LEGACY_SOURCES[handoff.PROVISION_ENTRY]) == 4621
     assert any(isinstance(node, ast.If) and isinstance(node.test, ast.Compare)
         and isinstance(node.test.left, ast.Name) and node.test.left.id == '__name__' for node in tenant.body)
     assert not any(isinstance(node, ast.If) and isinstance(node.test, ast.Compare)

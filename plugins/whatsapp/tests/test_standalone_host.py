@@ -281,7 +281,7 @@ def test_only_exact_canonical_optional_qos_directive_is_removed(setup, line):
     parts = standalone(setup); current = context(parts)
     try:
         current.preflight()
-        body = tenancy.render_apache(parts[1]).replace('    BoxPriorityDSCP 34\n', line)
+        body = tenancy.render_apache(parts[1]).replace('<VirtualHost *:443>\n', '<VirtualHost *:443>\n' + line, 1)
         with pytest.raises(ValueError, match='Unexpected QoS directive'):
             current._candidate(body, tls=True)
         assert current._read_record() is None

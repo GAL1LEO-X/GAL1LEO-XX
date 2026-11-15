@@ -6,7 +6,7 @@ From the repository root, build a deterministic, self-contained source bundle:
 python tools/build_source.py tesla --output outputs/tesla-source.zip
 ```
 
-The project-local `build.py --mode source` is also available. Source bundles
+The project-local `build.py --kind source` is also available. Source bundles
 are distinct from installable client packages. Python wheels install the
 backend; they do not register an app or deploy a server.
 

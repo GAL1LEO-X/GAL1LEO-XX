@@ -126,6 +126,7 @@ def test_export_contains_only_the_selected_users_public_configuration(tmp_path):
     with zipfile.ZipFile(output) as archive:
         assert set(archive.namelist())=={
             'plugin.json','mcp.json','assets/whatsapp-gpt.png','CONFIGURATION.md',
+            'LICENSE','NOTICE','THIRD_PARTY_NOTICES.md',
             'skills/whatsapp-setup/SKILL.md','skills/whatsapp-use/SKILL.md',
             'skills/whatsapp-transcription/SKILL.md',
             'skills/whatsapp-use/references/reading.md',

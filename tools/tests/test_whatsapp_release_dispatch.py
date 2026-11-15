@@ -97,10 +97,11 @@ def test_mismatched_success_receipt_reports_uncertain_outcome(tmp_path):
             client.dispatch(request, env)
 
 
-def test_workflow_is_manual_main_only_and_defaults_to_preview():
-    workflow = (ROOT/'.github/workflows/develative-release.yml').read_text()
-    assert '\n  release:' not in workflow and 'release.published' not in workflow
-    assert 'workflow_dispatch:' in workflow and "github.ref == 'refs/heads/main'" in workflow
-    assert 'default: preview' in workflow and 'options: [preview, activate]' in workflow
-    assert 'preview_ref:' not in workflow
-    assert 'persist-credentials: false' in workflow and 'ref: ${{ github.sha }}' in workflow
+def test_public_ci_does_not_install_the_private_deployment_receiver():
+    workflow = (ROOT / '.github/workflows/ci.yml').read_text()
+    assert not (ROOT / '.github/workflows/develative-release.yml').exists()
+    assert 'pull_request:' in workflow and 'branches: [main]' in workflow
+    assert 'workflow_dispatch:' not in workflow
+    for executable in ('whatsapp_release_dispatch.py', 'release_recover.py',
+                       'ssh ', 'scp ', 'DEPLOY_HOST', 'DEPLOY_KEY'):
+        assert executable not in workflow

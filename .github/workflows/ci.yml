@@ -25,6 +25,9 @@ jobs:
           cache: npm
       - name: Prepare isolated development dependencies
         run: |
+          python -m venv .venv
+          echo "$GITHUB_WORKSPACE/.venv/bin" >> "$GITHUB_PATH"
+          export PATH="$GITHUB_WORKSPACE/.venv/bin:$PATH"
           python -m pip install -r plugins/tesla/requirements-test.lock -r plugins/whatsapp/requirements-test.lock
           python -m pip install --no-deps -e plugins/tesla -e plugins/whatsapp
           npm ci --ignore-scripts
@@ -53,3 +56,7 @@ jobs:
         run: |
           python tools/build_source.py tesla --output outputs/tesla-source.zip
           python tools/build_source.py whatsapp --output outputs/whatsapp-source.zip
+      - name: Check source remains unchanged
+        run: |
+          git diff --exit-code
+          test -z "$(git ls-files --others --exclude-standard)"

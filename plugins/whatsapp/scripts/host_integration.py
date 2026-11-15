@@ -515,6 +515,18 @@ class Integration:
                 require(not directives or directives == [b'    BoxPriorityDSCP 34\n'],
                         'Unexpected QoS directive in standalone frontend')
                 body = body.replace(b'    BoxPriorityDSCP 34\n', b'')
+            else:
+                # A portable template has no dependency on the optional host
+                # priority module. Only this explicitly pinned QoS plan may
+                # request its reviewed AF41 directive.
+                directives = [line for line in body.splitlines(keepends=True)
+                              if re.match(rb'^[ \t]*BoxPriorityDSCP\b', line, re.I)]
+                require(not directives or directives == [b'    BoxPriorityDSCP 34\n'],
+                        'Unexpected QoS directive in opted-in frontend')
+                if not directives:
+                    body, openings = re.subn(rb'(?m)^(<VirtualHost \*:443>)(\r?\n)',
+                                             rb'\1\2    BoxPriorityDSCP 34\n', body)
+                    require(openings == 1, 'QoS frontend requires one explicit HTTPS vhost')
             generated[https] = body
         selected = []
         for name, body in generated.items():
