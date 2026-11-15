@@ -13,7 +13,7 @@ from sally_whatsapp.linking import LinkPortal, LinkError, HEADERS
 
 SOURCE = Path(__file__).resolve().parents[2] / 'plugins/whatsapp/sally_whatsapp'
 portal = object.__new__(LinkPortal)
-portal.settings = SimpleNamespace(profile_name='Profilo dimostrativo · utenza di prova')
+portal.settings = SimpleNamespace(profile_name='Demo profile · test account')
 state = {}
 
 

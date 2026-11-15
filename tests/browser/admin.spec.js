@@ -40,7 +40,7 @@ test('actual admin API requires a session and enforces CSRF and target confirmat
   await card.getByRole('button', {name:"Cancel import"}).click();
   await page.locator('#confirmation-input').fill('history.cancel:other');
   await page.locator('#confirm-button').click();
-  await expect(page.locator('#error')).toContainText("Confirm esplicitamente");
+  await expect(page.locator('#error')).toContainText("Explicitly confirm");
   expect((await (await request.get('/test/history/'+job.id)).json()).state).toBe('running');
   await card.getByRole('button', {name:"Cancel import"}).click();
   await page.locator('#confirmation-input').fill('history.cancel:'+job.id);
@@ -68,7 +68,7 @@ test('instance preview uses real profile validation and does not claim activatio
   await expect(page.locator('#preview-result')).toContainText('preview_only');
   await expect(page.locator('#preview-result')).toContainText('"resources_reserved": false');
   await expect(page.locator('#host-actions')).toContainText("Restore backup");
-  await expect(page.locator('#host-actions')).toContainText('Canale amministrativo non configurato');
+  await expect(page.locator('#host-actions')).toContainText('Administration channel not configured');
 });
 
 test('a delayed real response does not discard the next confirmation', async ({page, request}) => {
@@ -100,7 +100,7 @@ test('a delayed real response does not discard the next confirmation', async ({p
 
 test('a recovered status read clears its historical error', async ({page}) => {
   await page.goto('/test/login');
-  await expect(page.locator('#notice')).toContainText("Observation aggiornata");
+  await expect(page.locator('#notice')).toContainText("Observation refreshed");
   let fail = true;
   await page.route('**/admin/api/status', async route => {
     if (fail) {fail = false; await route.abort('failed');}
@@ -108,15 +108,15 @@ test('a recovered status read clears its historical error', async ({page}) => {
   });
   await page.getByRole('button',{name:"Refresh observation"}).click();
   await expect(page.locator('#error')).toBeVisible();
-  await expect(page.locator('#notice')).toContainText('non aggiornata');
+  await expect(page.locator('#notice')).toContainText('not refreshed');
   await page.getByRole('button',{name:"Refresh observation"}).click();
-  await expect(page.locator('#notice')).toContainText("Observation aggiornata");
+  await expect(page.locator('#notice')).toContainText("Observation refreshed");
   await expect(page.locator('#error')).toBeHidden();
 });
 
 for (const failure of ['lost', 'server-error']) test(failure + ' logout response verifies actual revocation without repeating POST', async ({page}) => {
   await page.goto('/test/login');
-  await expect(page.locator('#notice')).toContainText("Observation aggiornata");
+  await expect(page.locator('#notice')).toContainText("Observation refreshed");
   let posts = 0;
   await page.route('**/connect/api/logout', async route => {
     posts++;

@@ -282,7 +282,7 @@ def test_initial_pilot_connection_verifies_discovery_and_marks_pending_auth(tmp_
     assert len(observed) == 4
     with zipfile.ZipFile(tmp_path/"pilot.zip") as archive:
         manifest = json.loads(archive.read("plugin.json"))
-        assert manifest["extensions"]["com.openai"]["interface"]["displayName"] == "TESLA · Collaudo"
+        assert manifest["extensions"]["com.openai"]["interface"]["displayName"] == "TESLA · Test"
         assert b"refresh=false" in archive.read("skills/tesla-personal/SKILL.md")
         assert "tesla-test/mcp" in archive.read("mcp.json").decode()
 

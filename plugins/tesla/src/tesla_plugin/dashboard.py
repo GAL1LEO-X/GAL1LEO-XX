@@ -184,7 +184,7 @@ def render(store, ref, timezone, *, name, state, base, primary=True):
         if field == "Locked" and value is not None:
             display = 'Locked' if value else 'Unlocked'
         elif type(value) in (int, float):
-            display = f"{value:g}".replace(".", ",")
+            display = f"{value:g}"
         body += f'<article class="vehicle-metric">{icon(symbol)}<h3>{escape(label)}</h3><p class="metric-value">{escape(display)}'+(f' <span class="unit">{unit}</span>' if value is not None else '')+'</p>'+observation(record, now, timezone)+evidence_detail(evidence[field], timezone, label=label, unit=unit)+'</article>'
     return body+'</div>'+park_panel(store, ref, timezone)+'</section>'
 

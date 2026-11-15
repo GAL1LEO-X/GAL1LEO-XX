@@ -9,12 +9,12 @@ test('shared host action declares every affected instance and survives a lost HT
   await expect(action).toContainText("Affected instances: alpha, beta");
   await expect(action.locator('.operation-description')).toHaveText('Synthetic shared update');
   await action.getByRole('button', {name:"Confirm operation"}).click();
-  await expect(page.locator('#confirmation-details')).toContainText('Intervento condiviso');
+  await expect(page.locator('#confirmation-details')).toContainText('Shared operation');
   await expect(page.locator('#confirmation-details')).toContainText('alpha, beta');
   await expect(page.locator('#confirmation-details')).toContainText('Synthetic shared update');
   await page.locator('#confirmation-input').fill('release.activate:alpha');
   await page.locator('#confirm-button').click();
-  await expect(page.locator('#error')).toContainText("Confirm esplicitamente");
+  await expect(page.locator('#error')).toContainText("Explicitly confirm");
   expect((await (await request.get('/test/broker/state')).json()).effects).toBe(0);
   let calls = 0;
   await page.route('**/admin/api/operations', async route => {
@@ -26,7 +26,7 @@ test('shared host action declares every affected instance and survives a lost HT
   await action.getByRole('button', {name:"Confirm operation"}).click();
   await page.locator('#confirmation-input').fill('release.activate:installation');
   await page.locator('#confirm-button').click();
-  await expect(action).toContainText("Approvazione unavailable");
+  await expect(action).toContainText("Approval unavailable");
   const observed = await (await request.get('/test/broker/state')).json();
   expect(observed.effects).toBe(1);
   expect(observed.ids).toHaveLength(1);
@@ -51,14 +51,14 @@ test('an uncertain host request can only read its durable receipt without resubm
   await action.getByRole('button', {name:"Confirm operation"}).click();
   await page.locator('#confirmation-input').fill('release.activate:installation');
   await page.locator('#confirm-button').click();
-  await expect(action).toContainText("Approvazione unavailable");
+  await expect(action).toContainText("Approval unavailable");
   const observed = await (await request.get('/test/broker/state')).json();
   const row = page.locator('#operations article').filter({hasText:observed.ids[0]});
-  await expect(row).toContainText('Esito incerto');
+  await expect(row).toContainText('Outcome uncertain');
   await expect(row.getByRole('button', {name:"Check server receipt"})).toBeVisible();
   await row.getByRole('button', {name:"Check server receipt"}).click();
-  await expect(page.locator('#notice')).toContainText("Receipt " + observed.ids[0] + ': Esito incerto');
-  await expect(row).toContainText('Esito incerto');
+  await expect(page.locator('#notice')).toContainText("Receipt " + observed.ids[0] + ': Outcome uncertain');
+  await expect(row).toContainText('Outcome uncertain');
   expect(submissions).toBe(1);
   await request.post('/test/broker/release');
   // Releasing the synthetic executor does not mean its durable commit finished.
@@ -94,7 +94,7 @@ test('restore proposals for one instance retain distinct descriptions as plain t
   expect(await page.evaluate(() => window.adminDescriptionExecuted)).toBeUndefined();
   await page.locator('#confirmation-input').fill('backup.restore:alpha');
   await page.locator('#confirm-button').click();
-  await expect(secondAction).toContainText("Approvazione unavailable");
+  await expect(secondAction).toContainText("Approval unavailable");
   const observed = await (await request.get('/test/broker/state')).json();
   expect(observed.executed_approvals).toEqual([second.approval]);
   await expect(firstAction.getByRole('button', {name:"Confirm operation"})).toBeVisible();

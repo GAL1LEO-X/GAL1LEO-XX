@@ -13,7 +13,7 @@ test('prepared instance blocks pairing until separately activated, then guides p
   await page.goto('/test/login');
   await expect(page.locator('#activation-state')).toContainText("Activation required");
   await expect(page.locator('#phone-link')).toBeHidden();
-  await expect(page.locator('#chatgpt-state')).toContainText('non concede permessi a ChatGPT');
+  await expect(page.locator('#chatgpt-state')).toContainText('does not grant ChatGPT permissions');
   expect((await (await request.get('/test/receipt')).json()).requests).toEqual([]);
   await page.goto('/connect');
   await expect(page.locator('#activation-required')).toBeVisible();
@@ -37,7 +37,7 @@ test('prepared instance blocks pairing until separately activated, then guides p
   await expect(page.locator('#connected')).toBeVisible();
   await expect(page.locator('#pairing-code')).toHaveText('');
   await page.getByRole('link',{name:"Back to instance administration"}).click();
-  await expect(page.locator('#phone-state')).toContainText('Telefono collegato');
+  await expect(page.locator('#phone-state')).toContainText('Phone connected');
   await expect(page.locator('#chatgpt-state')).toContainText('cannot verify that consent');
   const receipt = await (await request.get('/test/receipt')).json();
   expect(JSON.stringify(receipt.journal)).not.toContain('TEST-ONLY');
@@ -100,7 +100,7 @@ test('expired owner session clears pairing credentials and blocks direct APIs', 
   await page.goto('/admin');
   await expect(page.getByRole('heading',{name:"Sign-in required"})).toBeVisible();
   await page.goto('/test/login');
-  await expect(page.locator('#phone-state')).toContainText('Pronto per un codice');
+  await expect(page.locator('#phone-state')).toContainText('Ready for a temporary code');
   await request.post('/test/expire');
   await page.getByRole('button',{name:"Refresh observation"}).click();
   await expect(page.getByRole('heading',{name:"Sign-in required"})).toBeVisible();

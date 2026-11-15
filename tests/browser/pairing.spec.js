@@ -9,7 +9,7 @@ test('QR renews and stale credentials disappear after failure and connection', a
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   await page.goto('/connect');
-  await expect(page.locator('#status')).toContainText('interrotto');
+  await expect(page.locator('#status')).toContainText('interrupted');
   await page.getByRole('button', { name: "Use the QR code", exact: true }).click();
   await expect(page.locator('#qr-image')).toBeVisible();
   const previous = (await (await request.get('/test/receipt')).json()).qr_reads;
@@ -28,7 +28,7 @@ test('QR renews and stale credentials disappear after failure and connection', a
   await expect(page.locator('#qr-image')).toBeVisible();
   await request.post('/test/working');
   await expect(page.locator('#pairing')).toBeHidden();
-  await expect(page.locator('#status')).toContainText('collegato');
+  await expect(page.locator('#status')).toContainText('connected');
   expect(errors).toEqual([]);
   expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
 });
@@ -37,7 +37,7 @@ test('wrong account is explained and retry retains the selected profile', async 
   await request.post('/test/wrong-owner');
   await page.goto('/connect');
   await expect(page.getByRole('heading', { level: 1 })).toHaveText("Connect your WhatsApp.");
-  await expect(page.locator('.identity')).toContainText('Profilo dimostrativo · utenza di prova');
+  await expect(page.locator('.identity')).toContainText('Demo profile · test account');
   await page.getByRole('link', { name: "Sign in and continue" }).click();
   await expect(page.getByRole('heading', { level: 1 })).toHaveText("Sign-in incomplete.");
   await expect(page.getByRole('alert')).toContainText('only its owner');
@@ -84,7 +84,7 @@ test('repeated actions submit once while pending and rate limits remain recovera
   expect((await (await request.get('/test/receipt')).json()).pairs).toBe(1);
   await request.post('/test/reject-pair');
   await page.getByRole('button', { name: "Use the QR code", exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText("Attendi 30 seconds");
+  await expect(page.getByRole('alert')).toContainText("Wait 30 seconds");
   await expect(page.locator('#qr-result')).toBeHidden();
   await expect(page.locator('#qr-button')).toBeEnabled();
   await expect(page.getByRole('alert')).toBeFocused();
@@ -177,12 +177,12 @@ test('status retry sends one request and clears the recovered service error', as
   const pending = new Promise(resolve => { release = resolve; });
   await page.route('**/connect/api/status', async route => {
     reads++;
-    if (reads === 1) return route.fulfill({status: 503, contentType: 'application/json', body: JSON.stringify({error: 'Servizio temporaneamente non raggiungibile.'})});
+    if (reads === 1) return route.fulfill({status: 503, contentType: 'application/json', body: JSON.stringify({error: 'Service temporarily unreachable.'})});
     await pending;
     await route.continue();
   });
   await page.goto('/connect');
-  await expect(page.getByRole('alert')).toContainText('temporaneamente');
+  await expect(page.getByRole('alert')).toContainText('temporarily');
   await expect(page.locator('#status-retry')).toBeEnabled();
   await page.locator('#status-retry').evaluate(button => { button.click(); button.click(); });
   await expect(page.locator('#status-retry')).toBeDisabled();
@@ -202,11 +202,11 @@ test('lost pairing response never triggers an automatic second request', async (
   await page.getByRole('button', { name: "Use the QR code", exact: true }).click();
   await expect(page.getByRole('alert')).toContainText('Check your connection');
   await expect(page.locator('#qr-result')).toBeHidden();
-  await expect(page.locator('#status')).toContainText('In attesa del telefono');
+  await expect(page.locator('#status')).toContainText('Waiting for the phone');
   expect((await (await request.get('/test/receipt')).json()).pairs).toBe(1);
   await request.post('/test/reject-pair');
   await page.getByRole('button', { name: "Use the QR code", exact: true }).click();
-  await expect(page.getByRole('alert')).toContainText("Attendi 30 seconds");
+  await expect(page.getByRole('alert')).toContainText("Wait 30 seconds");
   expect((await (await request.get('/test/receipt')).json()).pairs).toBe(2);
   await expect(page.locator('#qr-button')).toBeEnabled();
 });

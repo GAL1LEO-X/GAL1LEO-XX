@@ -2,7 +2,7 @@ const {test, expect} = require('@playwright/test');
 test.use({baseURL:'https://127.0.0.1:8876', ignoreHTTPSErrors:true});
 function deferred() {let resolve; const promise = new Promise(done=>{resolve=done;}); return {promise,resolve};}
 const card = (page,id) => page.locator('#history article').filter({hasText:id});
-async function login(page) {await page.goto('/test/login'); await expect(page.locator('#notice')).toContainText("Observation aggiornata");}
+async function login(page) {await page.goto('/test/login'); await expect(page.locator('#notice')).toContainText("Observation refreshed");}
 test.beforeEach(async ({page,request}) => {
   await request.post('/test/configure/activated');
   await page.route('**/*', route => new URL(route.request().url()).hostname === '127.0.0.1' ? route.continue() : route.abort());
@@ -42,7 +42,7 @@ test('incomplete observations retain the previous coherent view and recover', as
   });
   await page.route('**/admin/api/connection',route=>route.abort('failed'),{times:1});
   await page.locator('#refresh').click();
-  await expect(page.locator('#notice')).toContainText('non aggiornata');
+  await expect(page.locator('#notice')).toContainText('not refreshed');
   await expect(page.locator('#instance')).toHaveText(original);
   await page.locator('#refresh').click();
   await expect(page.locator('#instance')).toHaveText('NEW OBSERVATION');
@@ -58,7 +58,7 @@ test('a directly observed receipt survives a failed follow-up snapshot without r
   await card(page,id).getByRole('button',{name:"Pause"}).click();
   await page.locator('#confirmation-input').fill('history.pause:'+id);
   await page.locator('#confirm-button').click();
-  await expect(page.locator('#notice')).toContainText('non aggiornata');
+  await expect(page.locator('#notice')).toContainText('not refreshed');
   await expect(page.locator('#operations article').filter({hasText:id})).toContainText("Completed");
   expect((await (await request.get('/test/history/'+id)).json()).state).toBe('paused');
   await page.locator('#refresh').click();
@@ -71,8 +71,8 @@ test('both bounded lists reach and control records beyond the first hundred', as
   await login(page);
   await expect(page.locator('#history article')).toHaveCount(100);
   await expect(page.locator('#subscriptions article')).toHaveCount(100);
-  await expect(page.locator('#history-page')).toContainText('Altri elementi');
-  await expect(page.locator('#subscriptions-page')).toContainText('Altri elementi');
+  await expect(page.locator('#history-page')).toContainText('More items');
+  await expect(page.locator('#subscriptions-page')).toContainText('More items');
   await page.locator('#history-next').click();
   await expect(card(page,ids.history)).toContainText("In progress");
   await expect(page.locator('#history article')).toHaveCount(1);
@@ -105,7 +105,7 @@ test('pagination errors and repeated clicks preserve position, then expiry requi
   await login(page);
   await page.route('**/admin/api/status*',route=>route.abort('failed'),{times:1});
   await page.locator('#history-next').click();
-  await expect(page.locator('#notice')).toContainText('non aggiornata');
+  await expect(page.locator('#notice')).toContainText('not refreshed');
   await expect(page.locator('#history article')).toHaveCount(100);
   await expect(page.locator('#history-previous')).toBeDisabled();
   const gate=deferred(),started=deferred(); let calls=0;
@@ -186,7 +186,7 @@ test('Escape after a prior confirmation dispatches no POST after the close-event
   await card(page,second).getByRole('button',{name:'Cancel import'}).click();
   await page.locator('#confirmation-input').fill('history.cancel:'+second);
   await page.locator('#confirm-button').click();
-  await expect(card(page,second)).toContainText('Annullata');
+  await expect(card(page,second)).toContainText('Cancelled');
   expect(networkPosts).toBe(2);
   expect(await page.evaluate(()=>window.qa174OperationPosts.length)).toBe(2);
 });

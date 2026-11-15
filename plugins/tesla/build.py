@@ -164,9 +164,14 @@ def plugin(root, output, url, issuer, client_id, token_file=None, *, await_user_
     if any(any(p.is_symlink() for p in (root/"plugin"/name, *(root/"plugin"/name).parents)) for name in PLUGIN_FILES):
         raise ValueError("Symlinks are not package inputs")
     entries = {name: (root/"plugin"/name).read_bytes() for name in PLUGIN_FILES}
+    for notice_name in ("LICENSE", "NOTICE", "THIRD_PARTY_NOTICES.md"):
+        path = root/notice_name
+        if path.is_symlink() or not path.is_file():
+            raise ValueError("License notices must be regular source files")
+        entries[notice_name] = path.read_bytes()
     if pilot:
-        interface["displayName"] = "TESLA · Collaudo"
-        interface["shortDescription"] = 'Private test with synthetic data'
+        interface["displayName"] = "TESLA · Test"
+        interface["shortDescription"] = 'Synthetic test instance'
         interface["longDescription"] = 'Isolated instance for testing ChatGPT tools and notifications with synthetic data. No vehicle is connected and live Tesla requests are disabled.'
         interface["defaultPrompt"] = 'Check the TESLA connection and show test vehicles without live refreshes.'
         entries["plugin.json"] = (json.dumps(manifest, ensure_ascii=False, indent=2)+"\n").encode()

@@ -11,7 +11,7 @@ from test_host_qos_applicator import BASE, case, installed_whatsapp_identity, qo
 
 
 @pytest.fixture
-def adoption_case(case):
+def adoption_case(case, monkeypatch):
     root, base, policy, kernel, accounts, _ = case
     for name, item in json.loads((BASE / 'tools/tests/fixtures/qos/synthetic-legacy-files.json').read_bytes()).items():
         path = base / name.lstrip('/'); path.parent.mkdir(parents=True, exist_ok=True)
@@ -27,6 +27,10 @@ def adoption_case(case):
     proc = base / 'proc'; (proc / 'sys/kernel/random').mkdir(parents=True)
     (proc / 'sys/kernel/random/boot_id').write_text('01234567-89ab-cdef-0123-456789abcdef\n')
     operation = 'c' * 32; now = time.time_ns()
+    # Test admission freshness against a stable clock; host clock corrections
+    # must not manufacture expiry while a synthetic operation is running.
+    monkeypatch.setattr(qos.adoption, 'time', types.SimpleNamespace(
+        time_ns=lambda: now, monotonic=time.monotonic, sleep=time.sleep))
     evidence_path = '/etc/develative-host-qos/admission-evidence/' + operation + '.json'
     evidence = {'format': 1, 'kind': 'administrative-attestation', 'authority': 'host-administrator',
         'operation_id': operation, 'method': 'externally-verified-priority-admission-suspension',

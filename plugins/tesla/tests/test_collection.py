@@ -48,7 +48,7 @@ def test_selection_and_estimate_are_local_and_owner_only(prepared_service, fleet
         assert client.post(path, data=data, headers={"origin": "https://wrong.example"}).status_code == 400
         assert client.post(path, data={**data, "csrf": "bad"}, headers={"origin": "https://bridge.example"}).status_code == 400
         result = client.post(path, data=data, headers={"origin": "https://bridge.example"})
-        assert result.status_code == 200 and 'id="monthly-cost">0,11</output>' in result.text
+        assert result.status_code == 200 and 'id="monthly-cost">0.11</output>' in result.text
         assert 'id="signal-count">15870</output>' in result.text
         assert "script-src 'self'" in result.headers["content-security-policy"]
         assert "script-src" not in client.get("/tesla/owner/login").headers["content-security-policy"]
@@ -73,7 +73,7 @@ def test_owner_apply_pause_resume_preserves_profile_history_and_triggers(prepare
             return client.post("/tesla/owner/intents/"+identifier, data={"csrf": csrf, "decision": "execute"}, headers={"origin": "https://bridge.example"})
         response = post_form(fields_form(manager, vehicle_ref))
         assert response.status_code == 200 and 'Confirm collection' in response.text
-        assert "0,11 USD" in response.text and "BEGIN CERTIFICATE" not in response.text
+        assert "0.11 USD" in response.text and "BEGIN CERTIFICATE" not in response.text
         assert not any(name == CREATE for name, *_ in fleet.calls)
         identifier = manager.view(vehicle_ref)["last"]["id"]
         assert confirm(identifier).status_code == 200

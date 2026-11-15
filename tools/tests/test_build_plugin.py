@@ -26,6 +26,8 @@ class PackageTests(unittest.TestCase):
         result = builder.build(self.output, **self.options)
         with zipfile.ZipFile(self.output) as archive:
             names = set(archive.namelist())
+            self.assertTrue({'LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'} <= names)
+            self.assertIn(b'info@gal1leo.com', archive.read('NOTICE'))
             self.assertNotIn('mcp.json', names)
             self.assertIn('.app.json', names)
             manifest = json.loads(archive.read('plugin.json'))

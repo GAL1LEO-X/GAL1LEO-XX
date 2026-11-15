@@ -13,6 +13,7 @@ jobs:
       fail-fast: false
       matrix:
         python: ['3.13', '3.14']
+        suite: [tesla, whatsapp, tooling, browser]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -34,16 +35,21 @@ jobs:
         run: |
           find tools/cloud -type f -name '*.sh' -print0 | sort -z | xargs -0 -r -n1 bash -n
       - name: Tesla synthetic tests and browser forms
+        if: matrix.suite == 'tesla'
         run: python -m pytest plugins/tesla/tests -q --tb=short
       - name: WhatsApp synthetic tests
+        if: matrix.suite == 'whatsapp'
         run: python -m pytest plugins/whatsapp/tests -q --tb=short
       - name: Shared tooling tests
+        if: matrix.suite == 'tooling'
         run: python -m pytest tools/tests -q --tb=short
       - name: WhatsApp desktop and mobile browser tests
+        if: matrix.suite == 'browser'
         env:
           PLUGINS_TEST_PYTHON: python
         run: npm run test:browser
       - name: Build public source distributions
+        if: matrix.suite == 'tooling'
         run: |
           python tools/build_source.py tesla --output outputs/tesla-source.zip
           python tools/build_source.py whatsapp --output outputs/whatsapp-source.zip

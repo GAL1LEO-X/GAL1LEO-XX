@@ -193,6 +193,11 @@ def build(output, *, mode, name, version, connect_url, app_id=None, mcp_url=None
     overlay = {key: manifest[key] for key in ('name', 'version', 'description', 'author')}
     overlay.update(interface=ext['interface'], skills='./skills/', extensions={'com.openai': {'onboardingSkill': ext['onboardingSkill']}})
     files = _skills.collect(template, connect_url)
+    for notice_name in ('LICENSE', 'NOTICE', 'THIRD_PARTY_NOTICES.md'):
+        path = ROOT / 'plugins/whatsapp' / notice_name
+        if path.is_symlink() or not path.is_file():
+            raise ValueError('License notices must be regular source files')
+        files[notice_name] = path.read_bytes()
     files['assets/whatsapp-gpt.png'] = (template / 'assets/whatsapp-gpt.png').read_bytes()
     if mode == 'web':
         ext['apps'] = overlay['apps'] = './.app.json'
