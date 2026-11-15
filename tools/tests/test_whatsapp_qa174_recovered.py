@@ -221,7 +221,7 @@ class AttestedScriptTests(NoContainers):
             'build_gows_harness.py': 'b7a99cb1bd51ef02a10b2d74662fde8c16be7860d0c03253c027210d64a4f1e0',
             'complete_remaining_packages.py': '18b7dc587be1e339edc593fffdc4587fe7b5a46d1c1a352e84e2e6d1cbeb9003',
             'server-build.py': 'f793e224bb58b3018505d801b145a698a5b2706314ae40769dfc15a3df4123ff',
-            # The original input seal includes v1. Only v2 qualified successfully.
+            # Both historical readers are retained; the v2 reader is the documented successor.
             'server-qualify.py': 'd036a9be8ea77559f0dd54a746e698c4c5d43d4dbe2297ff11467919b7129a8f',
             'server-qualify-v2.py': 'f39287271f03164ef5bafcbdf5599cb303bc982be5ce3844dcad91599c19ef79',
             'run-compiled-tests.cjs': 'aff801181c7835d105dca033c87646fc1990399dd0524947327debef086a9042',

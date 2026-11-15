@@ -1,6 +1,6 @@
 """Legacy destination closure with real source bytes and owned processes only.
 
-backup_runtime_049.py.txt is the unchanged public source at baseline 04164aa,
+backup_runtime_049.py.txt is the sanitized compatibility source for baseline 0.4.9,
 SHA256 8c298c576b131ca8beb82fa8733c7a78693e549f7e28e6061030eb340699bd04.
 Its code is never executed by these tests: only compiled, hashed or replaced.
 """

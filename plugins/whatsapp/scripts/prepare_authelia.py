@@ -45,10 +45,10 @@ if not credentials_path.exists():
     if not password or not digest:
         raise SystemExit('Password generator output could not be parsed; output withheld')
     credentials_path.write_text(json.dumps({'username': USERNAME,
-        'display_name': 'WhatsApp personale', 'password': password.group(1),
+        'display_name': 'Personal WhatsApp', 'password': password.group(1),
         'password_hash': digest.group(1), 'subject': str(uuid.uuid4())}, indent=2))
 identity = json.loads(credentials_path.read_text())
-users['users'][USERNAME] = {'disabled': False, 'displayname': 'WhatsApp personale',
+users['users'][USERNAME] = {'disabled': False, 'displayname': 'Personal WhatsApp',
     'password': identity['password_hash'], 'groups': ['whatsapp-personal']}
 
 keypath = PRIVATE / 'oidc-signing.pem'
@@ -74,7 +74,7 @@ cfg.setdefault('identity_providers', {})['oidc'] = {
     'lifespans': {'access_token': '1h', 'refresh_token': '30d',
                   'id_token': '1h', 'authorize_code': '1m'},
     'clients': [{'client_id': 'whatsapp-personal-chatgpt',
-        'client_name': 'WhatsApp personale - ChatGPT', 'public': True,
+        'client_name': 'Personal WhatsApp - ChatGPT', 'public': True,
         'authorization_policy': 'whatsapp_personal_only',
         'consent_mode': 'explicit',
         # Verify this registered callback against the target ChatGPT connection.
