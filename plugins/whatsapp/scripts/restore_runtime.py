@@ -41,7 +41,7 @@ _CGROUP_ROOT = Path('/sys/fs/cgroup')
 # installation or the backup's advertised version. Backend changes require a
 # review of this admission contract and an explicit update of these hashes.
 RESTORE_GATE_SOURCES = {
-    '__init__.py': '6e6074d7f9c39207ad584ac1420ada36ee15bfaac7044f615527283cfe448a1b',
+    '__init__.py': '63e334cf109cf52fa68b9ef4bacfb9eb20eba197f93ac38ed1ba8bdf973d7aac',
     'server.py': '9b79f04f1980524ae100498071a54c8203e3962789f9e278a6687fa716d25afc',
     'restore_maintenance.py': 'ff190ba36d864ccd1dc4395d65d0750ed6bc46799a5822569cd2ccf5d5afe7db',
     'config.py': '0ac870da54721970ced393c9af998022feed2adab830fa07c606048534eedfea',

@@ -60,12 +60,12 @@ def deployed(tmp_path, monkeypatch):
     write(root / 'host.lock', b'', 0o600); write(engine_root / 'deploy.lock', b'', 0o600)
     release = engine_root / 'releases' / ('b' * 64)
     commit = 'c' * 40
-    manifest = {'format': 'gal1leo-deploy-v1', 'app': 'whatsapp', 'version': '0.8.13', 'commit': commit,
+    manifest = {'format': 'gal1leo-deploy-v1', 'app': 'whatsapp', 'version': '0.8.14', 'commit': commit,
                 'data': {'schema': 8, 'readable_schemas': [8]}}
     write(release / 'manifest.json', manifest)
     write(release / 'release.json', {'id': release.name, 'package_sha256': release.name, 'path': str(release),
                                    'commit': commit, 'manifest': manifest})
-    write(release / 'payload/application.json', {'name': 'whatsapp', 'version': '0.8.13', 'schema': 8, 'commit': commit})
+    write(release / 'payload/application.json', {'name': 'whatsapp', 'version': '0.8.14', 'schema': 8, 'commit': commit})
     write(release / 'runtime/venv/bin/python', b'synthetic interpreter; never execute', 0o755)
     (release / 'runtime/venv/lib').mkdir()
     (release / 'runtime/venv/lib64').symlink_to('lib')
@@ -85,7 +85,7 @@ def test_real_qualification_and_exact_two_instance_commands(deployed):
         assert len(fds) == 2
         first = deployment.load(deployed.profile, 'first')
         second = deployment.load(deployed.profile, 'second')
-    assert first.binding == second.binding and first.version == '0.8.13'
+    assert first.binding == second.binding and first.version == '0.8.14'
     assert first.command()[1:3] == ['-I', '-B']
     assert first.command()[5] != second.command()[5]
     assert first.command()[-1] == str(deployed.engine_root / 'current/payload/application.json')
@@ -302,7 +302,7 @@ def startup_deployment(deployed, monkeypatch):
 def test_readonly_inspection_exercises_complete_start_contract(startup_deployment):
     s = startup_deployment
     result = restore.inspect_runtime('first', reader=s.reader)
-    assert result['version'] == '0.8.13' and result['startup_contract_verified'] is True
+    assert result['version'] == '0.8.14' and result['startup_contract_verified'] is True
     assert result['runtime_seal_verified'] is True and result['source_gate_verified'] is True
     assert not result['restore_executed'] and not result['data_opened'] and not result['services_changed']
     assert all(call[0] in ('/usr/bin/systemctl', '/usr/bin/busctl') for call in s.calls)

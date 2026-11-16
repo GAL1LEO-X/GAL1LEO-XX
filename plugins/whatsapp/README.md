@@ -3,7 +3,7 @@
 Self-hosted bridge by **GAL1LEO** — **info@gal1leo.com**.
 Original code is licensed under [Apache-2.0](LICENSE).
 
-Source version **0.8.13**, companion provider **0.8.7**, SQLite schema **8**.
+Source version **0.8.14**, companion provider **0.8.7**, SQLite schema **8**.
 The bridge provides 27 MCP tools and a catalogue of 120 operations, including
 archive search, queued sends, streaming attachments, history acquisition,
 group operations, subscriptions and optional local audio transcription.

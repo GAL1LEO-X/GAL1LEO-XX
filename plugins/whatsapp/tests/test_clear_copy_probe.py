@@ -256,9 +256,9 @@ runpy.run_path(sys.argv[0],run_name='__main__')
 
 
 @pytest.mark.parametrize('version', ['0.4.7', '0.4.8', '0.4.9', '0.4.10', '0.5.1', '0.6.1',
-    '0.7.1', '0.8.14', '0.9.0', '1.0.0', '0.6.0-dev', '0.8.0-dev', '0.8.0rc1',
+    '0.7.1', '0.8.15', '0.9.0', '1.0.0', '0.6.0-dev', '0.8.0-dev', '0.8.0rc1',
     '0.8.5-dev', '0.8.5rc1', '0.8.6-dev', '0.8.6rc1', '0.8.7-dev', '0.8.7rc1',
-    '0.8.8-dev', '0.8.8rc1', '0.8.9-dev', '0.8.9rc1', '0.8.10-dev', '0.8.10rc1', '0.8.11-dev', '0.8.11rc1', '0.8.12-dev', '0.8.12rc1', '0.8.13-dev', '0.8.13rc1'])
+    '0.8.8-dev', '0.8.8rc1', '0.8.9-dev', '0.8.9rc1', '0.8.10-dev', '0.8.10rc1', '0.8.11-dev', '0.8.11rc1', '0.8.12-dev', '0.8.12rc1', '0.8.13-dev', '0.8.13rc1', '0.8.14-dev', '0.8.14rc1'])
 def test_offline_probe_rejects_other_versions_before_copying(tmp_path, version):
     source = source_copy(tmp_path)
     original = source.read_bytes()
@@ -278,7 +278,7 @@ runpy.run_path(sys.argv[0],run_name='__main__')
     assert not work.exists()
 
 
-@pytest.mark.parametrize('version', ['0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.8.1', '0.8.2', '0.8.3', '0.8.4', '0.8.5', '0.8.6', '0.8.7', '0.8.8', '0.8.9', '0.8.10', '0.8.11', '0.8.12', '0.8.13'])
+@pytest.mark.parametrize('version', ['0.5.0', '0.6.0', '0.7.0', '0.8.0', '0.8.1', '0.8.2', '0.8.3', '0.8.4', '0.8.5', '0.8.6', '0.8.7', '0.8.8', '0.8.9', '0.8.10', '0.8.11', '0.8.12', '0.8.13', '0.8.14'])
 def test_offline_probe_accepts_only_reviewed_schema8_candidates(tmp_path, version):
     source = source_copy(tmp_path)
     original = source.read_bytes()

@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "gal1leo-tesla"
-version = "1.0.4"
+version = "1.0.5"
 description = "Self-hosted Tesla Fleet API and MCP integration"
 requires-python = ">=3.13"
 license = "Apache-2.0"

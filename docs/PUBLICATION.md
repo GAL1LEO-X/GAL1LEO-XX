@@ -1,6 +1,6 @@
 # Public import scope
 
-This import provides Tesla 1.0.4 and WhatsApp 0.8.13 source with English
+This distribution provides Tesla 1.0.5 and WhatsApp 0.8.14 source with English
 presentation, standalone configuration examples and developer attribution.
 Versions identify the application source, not a hosted service deployment.
 WhatsApp's companion provider candidate is 0.8.7; SQLite schema remains 8.

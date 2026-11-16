@@ -117,6 +117,39 @@ class BuilderTests(unittest.TestCase):
                 with patch.object(builder, "run", side_effect=download), self.assertRaises(ValueError):
                     builder.download_locked_wheels(entries, destination, root / "download.lock", {})
 
+    def test_download_preserves_configured_transport_without_leaking_build_credentials(self):
+        network = {name: 'http://proxy.example.invalid:3128' for name in
+                   ('HTTP_PROXY', 'HTTPS_PROXY', 'ALL_PROXY', 'http_proxy', 'https_proxy', 'all_proxy')}
+        network.update(NO_PROXY='localhost,127.0.0.1', no_proxy='localhost,127.0.0.1')
+        network.update({name: '/synthetic/ca.pem' for name in
+                        ('SSL_CERT_FILE', 'REQUESTS_CA_BUNDLE', 'CURL_CA_BUNDLE', 'PIP_CERT')})
+        network['SSL_CERT_DIR'] = '/synthetic/certs'
+        unrelated = {'GH_TOKEN': 'synthetic-token', 'UNRELATED_SECRET': 'synthetic-secret',
+                     'PIP_INDEX_URL': 'https://index.example.invalid', 'PYTHONPATH': '/untrusted'}
+        for configured in (network, {}):
+            with self.subTest(configured=bool(configured)), tempfile.TemporaryDirectory() as directory:
+                root = Path(directory); original = wheel(root)
+                entries = {'example': wheel_policy_entry(original)}
+                destination, requirements = root / 'downloads', root / 'download.lock'
+                isolated = {'PATH': '/synthetic/bin', 'HOME': str(root / 'home'),
+                            'PIP_CONFIG_FILE': builder.os.devnull, 'PYTHONNOUSERSITE': '1'}
+                before = dict(isolated)
+
+                def download(args, **kwargs):
+                    self.assertEqual(kwargs['env'], {**before, **configured})
+                    self.assertTrue(set(unrelated).isdisjoint(kwargs['env']))
+                    for flag in ('--require-hashes', '--no-index', '--no-deps', '--only-binary=:all:'):
+                        self.assertIn(flag, args)
+                    self.assertEqual(requirements.read_text(), builder.locked_requirements(entries, remote=True))
+                    (destination / original.name).write_bytes(original.read_bytes())
+
+                with patch.dict(builder.os.environ, {**unrelated, **configured}, clear=True), \
+                     patch.object(builder, 'run', side_effect=download):
+                    builder.download_locked_wheels(entries, destination, requirements, isolated)
+                    self.assertEqual(dict(builder.os.environ), {**unrelated, **configured})
+                # The same isolated env is subsequently used by offline build/install.
+                self.assertEqual(isolated, before)
+
     def test_committed_policy_covers_exact_runtime_and_build_pins(self):
         expected = builder.runtime_requirements(ROOT / "plugins/whatsapp/requirements.lock")
         policy = builder.dependency_policy(expected)

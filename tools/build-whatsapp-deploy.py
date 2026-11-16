@@ -217,11 +217,19 @@ def verify_locked_wheel(path, name, item):
 def download_locked_wheels(entries, destination, requirements, env):
     destination.mkdir()
     requirements.write_text(locked_requirements(entries, remote=True), encoding="utf-8")
+    # Public wheel downloads use the configured network transport and CA trust.
+    # Keep application build/install processes on the original isolated env;
+    # never inherit unrelated credentials, pip indexes or Python settings.
+    network_keys = ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY", "NO_PROXY",
+                    "http_proxy", "https_proxy", "all_proxy", "no_proxy",
+                    "SSL_CERT_FILE", "SSL_CERT_DIR", "REQUESTS_CA_BUNDLE",
+                    "CURL_CA_BUNDLE", "PIP_CERT")
+    download_env = {**env, **{name: os.environ[name] for name in network_keys if name in os.environ}}
     # Direct URLs plus local hashes admit no new compatible wheel for a pinned
     # version, and --no-index avoids consulting mutable index selections.
     run([sys.executable, "-m", "pip", "download", "--only-binary=:all:", "--no-deps",
          "--no-index", "--no-cache-dir", "--require-hashes", "--dest", destination,
-         "--requirement", requirements], env=env)
+         "--requirement", requirements], env=download_env)
     require({path.name for path in destination.iterdir()} == {item["filename"] for item in entries.values()},
             "Downloaded wheelhouse differs from trusted policy")
     for name, item in entries.items():
