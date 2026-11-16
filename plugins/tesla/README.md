@@ -3,7 +3,7 @@
 Self-hosted Tesla Fleet API and MCP integration by **GAL1LEO** — **info@gal1leo.com**.
 Original code is licensed under [Apache-2.0](LICENSE).
 
-Source version **1.0.4** includes authenticated MCP tools, an owner dashboard,
+Source version **1.0.5** includes authenticated MCP tools, an owner dashboard,
 Tesla OAuth, regional Fleet API transport, a pinned signed-command adapter,
 persistent telemetry, history, configurable rules and event subscriptions.
 The console, skills and descriptive tool output are in English.

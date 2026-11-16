@@ -6,6 +6,7 @@ import io
 import json
 from pathlib import Path
 import sys
+import tomllib
 import zipfile
 
 import pytest
@@ -17,9 +18,17 @@ from test_schema3_update import (adapter_module, rig as schema_rig, OWNER, OWNER
 
 
 PATH = Path(__file__).parents[1] / 'deploy' / 'patch_update.py'
+HISTORICAL_REQUIREMENTS = Path(__file__).with_name('fixtures') / 'requirements-through-1.0.4.lock'
 
 
-@pytest.fixture(params=["patch_update.py", "patch103_update.py", "patch104_update.py"])
+def candidate_inputs(module):
+    root = PATH.parent.parent
+    return {name: (HISTORICAL_REQUIREMENTS if name == 'requirements.lock'
+                   and module.CANDIDATE_FILES[name] == sha(HISTORICAL_REQUIREMENTS) else root / name).read_bytes()
+            for name in module.CANDIDATE_FILES}
+
+
+@pytest.fixture(params=["patch_update.py", "patch103_update.py", "patch104_update.py", "patch105_update.py"])
 def patch_module(request):
     path = PATH.with_name(request.param)
     spec = importlib.util.spec_from_file_location('synthetic_patch_adapter', path)
@@ -30,6 +39,7 @@ def patch_module(request):
         "patch_update.py": ("1.0.1", "1.0.2"),
         "patch103_update.py": ("1.0.2", "1.0.3"),
         "patch104_update.py": ("1.0.3", "1.0.4"),
+        "patch105_update.py": ("1.0.4", "1.0.5"),
     }[request.param]
     return module
 
@@ -45,11 +55,11 @@ def patch_rig(schema_rig, patch_module, monkeypatch):
     old_store.parent.mkdir(parents=True)
     old_store.write_text('synthetic reviewed previous Store\n')
     monkeypatch.setattr(patch_module, 'PREVIOUS_STORE', sha(old_store))
-    root = PATH.parent.parent
-    entries = {name: (root / name).read_bytes() for name in patch_module.CANDIDATE_FILES}
+    entries = candidate_inputs(patch_module)
     entries.update({'VERSION': (rig.candidate_version+'\n').encode(), 'deploy/'+path.name: path.read_bytes(),
                     'deploy/schema3_update.py': PATH.with_name('schema3_update.py').read_bytes()})
-    (rig.previous / 'requirements.lock').write_bytes(entries['requirements.lock'])
+    (rig.previous / 'requirements.lock').write_bytes(HISTORICAL_REQUIREMENTS.read_bytes())
+    (rig.previous / 'src/tesla_plugin/schema_migrations.py').write_bytes(entries['src/tesla_plugin/schema_migrations.py'])
     with zipfile.ZipFile(rig.archive, 'w') as archive:
         for name, data in entries.items():
             archive.writestr(name, data)
@@ -182,23 +192,66 @@ def test_start_marker_is_durable_before_start_command_even_if_start_result_uncer
     assert all(rig.ops.states[name]['ActiveState'] == 'inactive' for name in OWNERS)
 
 
-@pytest.mark.parametrize('change', ['archive', 'store', 'manifest', 'previous_version', 'previous_store'])
+@pytest.mark.parametrize('change', ['archive', 'store', 'manifest', 'previous_version', 'previous_store',
+                                  'previous_lock', 'candidate_lock'])
 def test_patch_verification_is_exact_and_rejects_drift(patch_rig, change):
     rig = patch_rig
     rig.adapter.stage()
     path = {'archive': rig.archive, 'store': rig.adapter.release / 'src/tesla_plugin/store.py',
             'manifest': rig.adapter.release / 'SHA256SUMS.json',
             'previous_version': rig.previous / 'VERSION',
-            'previous_store': rig.previous / 'src/tesla_plugin/store.py'}[change]
+            'previous_store': rig.previous / 'src/tesla_plugin/store.py',
+            'previous_lock': rig.previous / 'requirements.lock',
+            'candidate_lock': rig.adapter.release / 'requirements.lock'}[change]
     path.write_bytes(path.read_bytes() + b'synthetic drift')
     with pytest.raises(ValueError):
         rig.adapter._verify_release()
 
 
 def test_patch_pins_match_candidate_package_and_historical_adapter(patch_module):
-    root = PATH.parent.parent
-    assert {name: sha(root / name) for name in patch_module.CANDIDATE_FILES} == patch_module.CANDIDATE_FILES
+    assert {name: hashlib.sha256(data).hexdigest() for name, data in candidate_inputs(patch_module).items()} == patch_module.CANDIDATE_FILES
     assert sha(PATH.with_name('schema3_update.py')) == patch_module.BASE_ADAPTER_SHA256
+
+
+@pytest.mark.parametrize('patch_module', ['patch105_update.py'], indirect=True)
+def test_patch105_stage_uses_exact_reviewed_build_dependency_without_changing_runtime_closure(patch_rig):
+    rig = patch_rig
+    rig.adapter.stage()
+    project = tomllib.loads((rig.adapter.release / 'pyproject.toml').read_text())
+    assert project['build-system']['requires'] == [rig.module.BUILD_REQUIREMENT]
+    dependency_calls = [call for call in rig.ops.calls if call[1:4] == ['-m', 'pip', 'install'] and '-r' in call]
+    assert len(dependency_calls) == 1
+    assert dependency_calls[0][-1] == 'setuptools==84.0.0'
+    assert (rig.previous / 'requirements.lock').read_bytes() == HISTORICAL_REQUIREMENTS.read_bytes()
+    assert (rig.adapter.release / 'requirements.lock').read_bytes() == HISTORICAL_REQUIREMENTS.read_bytes().replace(
+        b'opentelemetry-api==1.45.1\n', b'opentelemetry-api==1.45.2\n')
+
+
+@pytest.mark.parametrize('patch_module', ['patch105_update.py'], indirect=True)
+@pytest.mark.parametrize('change', ['extra_dependency', 'missing_otel', 'duplicate_otel', 'old_otel',
+                                  'previous_schema', 'candidate_build'])
+def test_patch105_rejects_unreviewed_closure_and_schema_before_writer_changes(patch_rig, monkeypatch, change):
+    rig = patch_rig
+    rig.adapter.stage()
+    calls = list(rig.ops.calls)
+    if change == 'previous_schema':
+        path = rig.previous / 'src/tesla_plugin/schema_migrations.py'
+        path.write_bytes(path.read_bytes() + b'\n# drift\n')
+    elif change == 'candidate_build':
+        path = rig.adapter.release / 'pyproject.toml'
+        path.write_bytes(path.read_bytes().replace(b'setuptools==84.0.0', b'setuptools==84.1.0'))
+    else:
+        path = rig.adapter.release / 'requirements.lock'
+        replacement = {'extra_dependency': b'opentelemetry-api==1.45.2\nunreviewed==1.0\n',
+                       'missing_otel': b'', 'duplicate_otel': b'opentelemetry-api==1.45.2\nopentelemetry-api==1.45.2\n',
+                       'old_otel': b'opentelemetry-api==1.45.1\n'}[change]
+        path.write_bytes(path.read_bytes().replace(b'opentelemetry-api==1.45.2\n', replacement))
+        # Even repinning a candidate cannot silently widen this transition.
+        monkeypatch.setattr(rig.module, 'CANDIDATE_FILES', rig.module.CANDIDATE_FILES | {'requirements.lock': sha(path)})
+    with pytest.raises(ValueError):
+        rig.adapter._verify_release()
+    assert rig.ops.calls == calls
+    assert all(rig.ops.states[name]['ActiveState'] == 'active' for name in OWNERS)
 
 
 def test_crash_before_candidate_start_is_recoverable_without_database_replacement(patch_rig):

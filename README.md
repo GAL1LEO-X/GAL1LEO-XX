@@ -4,8 +4,8 @@ Public, self-hosted projects by **GAL1LEO**. Contact: **info@gal1leo.com**.
 
 | Project | Purpose | Source version |
 | --- | --- | --- |
-| [Tesla](plugins/tesla/README.md) | Tesla Fleet API, owner console, confirmed commands and telemetry | 1.0.4 |
-| [WhatsApp](plugins/whatsapp/README.md) | Searchable archive, messaging, attachments and MCP events | 0.8.13 |
+| [Tesla](plugins/tesla/README.md) | Tesla Fleet API, owner console, confirmed commands and telemetry | 1.0.5 |
+| [WhatsApp](plugins/whatsapp/README.md) | Searchable archive, messaging, attachments and MCP events | 0.8.14 |
 
 Each operator supplies their own accounts, server, HTTPS domain, identity
 provider and credentials. These sources do not connect to a developer-hosted

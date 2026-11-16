@@ -95,7 +95,7 @@ def probe_settings(path,config,context,marker):
     from sally_whatsapp import __version__
     from sally_whatsapp.config import Settings
     # Older reviewed Settings classes predate this field and have no panel.
-    administration={'admin_enabled':False} if __version__ in ('0.8.0','0.8.1','0.8.2','0.8.3','0.8.4','0.8.5','0.8.6','0.8.7','0.8.8','0.8.9','0.8.10','0.8.11','0.8.12','0.8.13') else {}
+    administration={'admin_enabled':False} if __version__ in ('0.8.0','0.8.1','0.8.2','0.8.3','0.8.4','0.8.5','0.8.6','0.8.7','0.8.8','0.8.9','0.8.10','0.8.11','0.8.12','0.8.13','0.8.14') else {}
     return Settings(database=path,issuer='https://issuer.invalid',
         **context,webhook_secret_file=config/'synthetic-webhook.key',
         encryption_key_file=config/'synthetic-encryption.key',
@@ -255,11 +255,12 @@ def main():
     # fence are unchanged; the complete gated lifecycle is qualified below.
     # 0.8.12 adds bounded image tool content without changing persisted data.
     # 0.8.13 fixes send evidence, callbacks, media deadlines and domain contracts.
+    # 0.8.14 updates OpenTelemetry trace-context parsing only; no storage change.
     # Schema8, clear repair and the pre-SQLite restore fence are preserved;
     # the synthetic probe verifies full-row preservation and gated activation.
     # Keep this exact candidate boundary and the disabled admin fixture above.
-    if __version__ not in ('0.5.0','0.6.0','0.7.0','0.8.0','0.8.1','0.8.2','0.8.3','0.8.4','0.8.5','0.8.6','0.8.7','0.8.8','0.8.9','0.8.10','0.8.11','0.8.12','0.8.13'):
-        raise RuntimeError('Expected a reviewed candidate: 0.5.0, 0.6.0, 0.7.0, 0.8.0, 0.8.1, 0.8.2, 0.8.3, 0.8.4, 0.8.5, 0.8.6, 0.8.7, 0.8.8, 0.8.9, 0.8.10, 0.8.11, 0.8.12 or 0.8.13 with schema8')
+    if __version__ not in ('0.5.0','0.6.0','0.7.0','0.8.0','0.8.1','0.8.2','0.8.3','0.8.4','0.8.5','0.8.6','0.8.7','0.8.8','0.8.9','0.8.10','0.8.11','0.8.12','0.8.13','0.8.14'):
+        raise RuntimeError('Expected a reviewed candidate: 0.5.0, 0.6.0, 0.7.0, 0.8.0, 0.8.1, 0.8.2, 0.8.3, 0.8.4, 0.8.5, 0.8.6, 0.8.7, 0.8.8, 0.8.9, 0.8.10, 0.8.11, 0.8.12, 0.8.13 or 0.8.14 with schema8')
     source_hash=file_hash(source)
     context={'owner_subject':'synthetic-copy-probe','public_url':'https://offline.invalid','session':'default'}
     marker_bytes=None
